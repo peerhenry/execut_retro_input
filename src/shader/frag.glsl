@@ -16,5 +16,6 @@ void main() {
   float alpha = texture(font_tex, f_tex_pos).r;
   if (alpha <= 0.0) {
     discard;
-  } else out_color = f_color * vec4(1, 1, 1, alpha);
+  }
+  out_color = f_color * vec4(1, 1, 1, alpha);
 }

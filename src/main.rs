@@ -23,7 +23,7 @@ use helpers::*;
 macro_rules! gl_assert_ok {
   () => {{
     let err = gl::GetError();
-    assert_eq!(err, gl::NO_ERROR, "{}", gl_err_to_str(err));
+    assert_eq!(err, gl::NO_ERROR, "gl error: {}", gl_err_to_str(err));
   }};
 }
 
@@ -61,6 +61,32 @@ fn main() -> Res<()> {
 
   // Load the OpenGL function pointers
   gl::load_with(|symbol| window.get_proc_address(symbol) as _);
+
+  // setup frame program
+  let mut using_frame_buffer = false;
+  // println!("time to setup frame program"); // DEBUG
+  let frame_vs = compile_shader(include_str!("shader/frame.vert.glsl"), gl::VERTEX_SHADER)?;
+  let frame_fs = compile_shader(include_str!("shader/frame.frag.glsl"), gl::FRAGMENT_SHADER)?;
+  let frame_program = link_program(frame_vs, frame_fs)?;
+  let width: GLsizei = 1920;
+  let height: GLsizei = 1080;
+  let mut fbo: GLuint = 0;
+  let mut rbo: GLuint = 0;
+  let mut frame_vbo: GLuint = 0;
+  let mut frame_vao: GLuint = 0;
+  let mut frame_texture: GLuint = 0;
+  unsafe {
+    fbo = make_framebuffer();
+    frame_texture = make_frame_texture(fbo, width, height);
+    attach_texture_to_framebuffer(fbo, frame_texture);
+    rbo = make_render_buffer(fbo, width, height);
+    complete_framebuffer(fbo, rbo);
+    let tup = make_frame_quad();
+    frame_vbo = tup.0;
+    frame_vao = tup.1;
+    gl_assert_ok!();
+    using_frame_buffer = true;
+  }
 
   // Create GLSL shaders
   let vs = compile_shader(include_str!("shader/vert.glsl"), gl::VERTEX_SHADER)?;
@@ -142,6 +168,7 @@ fn main() -> Res<()> {
       // Use srgb for consistency with other examples
       gl::Enable(gl::FRAMEBUFFER_SRGB);
       gl::ClearColor(0.02, 0.02, 0.02, 1.0);
+      // vao is used after this somewhere...
   }
 
   let mut text: String = include_str!("text/lipsum.txt").into();
@@ -156,6 +183,7 @@ fn main() -> Res<()> {
       .ok_or("get_inner_size = None")?
       .to_physical(window.get_hidpi_factor());
 
+  // println!("Time to enter events loop"); // DEBUG
   while running {
       loop_helper.loop_start();
       events.poll_events(|event| {
@@ -221,6 +249,7 @@ fn main() -> Res<()> {
       let height = dimensions.height as _;
       let scale = Scale::uniform((font_size * window.get_hidpi_factor() as f32).round());
 
+      // println!("Time queu glyph brush section 1"); // DEBUG
       glyph_brush.queue(Section {
         text: &text,
         scale,
@@ -230,6 +259,7 @@ fn main() -> Res<()> {
         ..Section::default()
       });
 
+      // println!("Time queu glyph brush section 2"); // DEBUG
       glyph_brush.queue(Section {
         text: &text,
         scale,
@@ -242,6 +272,7 @@ fn main() -> Res<()> {
         ..Section::default()
       });
 
+      // println!("Time queu glyph brush section 3"); // DEBUG
       glyph_brush.queue(Section {
         text: &text,
         scale,
@@ -254,8 +285,10 @@ fn main() -> Res<()> {
         ..Section::default()
       });
 
+      // println!("Time to loop over brush actions"); // DEBUG
       let mut brush_action;
       loop {
+        unsafe { gl::BindTexture(gl::TEXTURE_2D, glyph_texture); }
         brush_action = glyph_brush.process_queued(
           (width as _, height as _),
           |rect, tex_data| unsafe {
@@ -276,6 +309,7 @@ fn main() -> Res<()> {
           to_vertex,
         );
 
+        // println!("Time to match brush actions for resize"); // DEBUG
         match brush_action {
           Ok(_) => break,
           Err(BrushError::TextureTooSmall { suggested, .. }) => unsafe {
@@ -299,6 +333,7 @@ fn main() -> Res<()> {
           },
         }
       }
+      // println!("Time to match brush actions for draw"); // DEBUG
       match brush_action? {
         BrushAction::Draw(vertices) => {
           // Draw new vertices
@@ -325,9 +360,25 @@ fn main() -> Res<()> {
         BrushAction::ReDraw => {}
       }
 
+      // println!("Time to draw"); // DEBUG
       unsafe {
+        // pass 1
+        // Use shader program
+        // todo: bind frame buffer
+        // todo: set clear color
+        gl::UseProgram(program);
         gl::Clear(gl::COLOR_BUFFER_BIT);
+        gl::BindTexture(gl::TEXTURE_2D, glyph_texture);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vao);
         gl::DrawArraysInstanced(gl::TRIANGLE_STRIP, 0, 4, vertex_count as _);
+        // pass 2
+        // todo: bind frame buffer 0
+        // todo: set clear color
+        // todo: gl::Clear(gl::COLOR_BUFFER_BIT);
+        // todo: use frame vertex program
+        // todo: bind vertex array for screen quad
+        // todo: bind texture
+        // todo: glDrawArrays(GL_TRIANGLES, 0, 6)
       }
 
       window.swap_buffers()?;
@@ -345,6 +396,89 @@ fn main() -> Res<()> {
       gl::DeleteBuffers(1, &vbo);
       gl::DeleteVertexArrays(1, &vao);
       gl::DeleteTextures(1, &glyph_texture);
+
+      if using_frame_buffer {
+        gl::DeleteProgram(frame_program);
+        gl::DeleteShader(frame_vs);
+        gl::DeleteShader(frame_fs);
+        gl::DeleteBuffers(1, &frame_vbo);
+        gl::DeleteVertexArrays(1, &frame_vao);
+        gl::DeleteTextures(1, &frame_texture);
+        gl::DeleteFramebuffers(1, &fbo);
+        gl::DeleteRenderbuffers(1, &rbo);
+      }
   }
   Ok(())
+}
+
+// Rendering to a texture https://learnopengl.com/Advanced-OpenGL/Framebuffers
+
+unsafe fn make_framebuffer() -> GLuint {
+  let mut fbo: GLuint = 0;
+  gl::GenFramebuffers(1, &mut fbo);
+  fbo
+}
+
+unsafe fn make_frame_texture(fbo: GLuint, width: GLsizei, height: GLsizei) -> GLuint {
+  let mut tbo: GLuint = 0;
+  gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
+  gl::GenTextures(1, &mut tbo);
+  gl::BindTexture(gl::TEXTURE_2D, tbo);
+  gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as _, width, height, 0, gl::RGB as _, gl::UNSIGNED_BYTE, ptr::null());
+  gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as _); // param min filter
+  gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as _); // param mag filter
+  gl::BindTexture(gl::TEXTURE_2D, 0);
+  gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+  tbo
+}
+
+unsafe fn attach_texture_to_framebuffer(fbo: GLuint, tbo: GLuint) {
+  gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
+  gl::FramebufferTexture2D(gl::FRAMEBUFFER, gl::COLOR_ATTACHMENT0, gl::TEXTURE_2D, tbo, 0); // attach texture 
+  gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+}
+
+// framebuffer must be bound for this one
+unsafe fn make_render_buffer(fbo: GLuint, width: GLsizei, height: GLsizei) -> GLuint {
+  gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
+  let mut rbo: GLuint = 0;
+  gl::GenRenderbuffers(1, &mut rbo);
+  gl::BindRenderbuffer(gl::RENDERBUFFER, rbo);
+  gl::RenderbufferStorage(gl::RENDERBUFFER, gl::DEPTH24_STENCIL8, width, height);
+  gl::BindRenderbuffer(gl::RENDERBUFFER, 0);
+  gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+  rbo
+}
+
+unsafe fn complete_framebuffer(framebuffer: GLuint, rbo: GLuint) {
+  gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
+  gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::RENDERBUFFER, rbo);
+  if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
+    panic!("framebuffer error");
+  }
+  gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+}
+
+unsafe fn make_frame_quad() -> (GLuint, GLuint) {
+  let mut vao: GLuint = 0;
+  let mut vbo: GLuint = 0;
+  gl::GenVertexArrays(1, &mut vao);
+  gl::BindVertexArray(vao);
+  gl::GenBuffers(1, &mut vbo);
+  gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+  let vertices: Vec<f32> = vec![
+     -1.0,  1.0, 0.0, 0.0,
+      1.0,  1.0, 1.0, 0.0,
+     -1.0, -1.0, 0.0, 1.0,
+     -1.0, -1.0, 0.0, 1.0,
+      1.0,  1.0, 1.0, 0.0,
+      1.0, -1.0, 1.0, 1.0
+  ];
+  gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (vertices.len() * mem::size_of::<Vertex>()) as GLsizeiptr,
+                vertices.as_ptr() as _,
+                gl::STATIC_DRAW,
+              );
+  (vbo, vao)
 }

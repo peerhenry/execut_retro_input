@@ -1,0 +1,21 @@
+[package]
+name = "retro_font_render_test"
+version = "0.1.0"
+authors = ["PeerHenry <peer@infi.nl>"]
+edition = "2018"
+
+[dependencies]
+env_logger = { version = "0.6", default-features = false }
+spin_sleep = "0.3"
+gl = "0.11"
+glutin = "0.19"
+glyph_brush = "0.3.0"
+glyph_brush_layout = "0.1.4"
+log = "0.4.4"
+ordered-float = "1"
+full_rusttype = { version = "0.7.4", features = ["gpu_cache"], package = "rusttype" }
+seahash = "3"
+hashbrown = "0.1"
+
+[dev-dependencies]
+lazy_static = "1"

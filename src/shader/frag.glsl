@@ -7,11 +7,6 @@ in vec4 f_color;
 
 out vec4 out_color;
 
-// psuedo random number generator
-float rand(vec2 co){
-  return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-}
-
 void main() {
   float alpha = texture(font_tex, f_tex_pos).r;
   if (alpha <= 0.0) {

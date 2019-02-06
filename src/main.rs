@@ -18,6 +18,7 @@ use std::{
 };
 mod helpers;
 use helpers::*;
+use rand::*;
 
 pub type FrameVertex = [GLfloat; 4];
 
@@ -48,7 +49,7 @@ fn main() -> Res<()> {
 
   let window = glutin::GlWindow::new(
       glutin::WindowBuilder::new()
-          .with_dimensions((1024, 576).into())
+          .with_dimensions((1600, 900).into())
           .with_title(title),
       glutin::ContextBuilder::new()
           .with_gl_profile(GlProfile::Core)
@@ -70,8 +71,9 @@ fn main() -> Res<()> {
   let frame_vs = compile_shader(include_str!("shader/frame.vert.glsl"), gl::VERTEX_SHADER)?;
   let frame_fs = compile_shader(include_str!("shader/frame.frag.glsl"), gl::FRAGMENT_SHADER)?;
   let frame_program = link_program(frame_vs, frame_fs)?;
-  let f_width: GLsizei = 1920;
-  let f_height: GLsizei = 1080;
+  let f_width: GLsizei = 1600; // 1920;
+  let f_height: GLsizei = 900; // 1080;
+  // let (f_width, f_height) = glyph_brush.texture_dimensions();
   let mut fbo: GLuint = 0;
   let mut rbo: GLuint = 0;
   let mut frame_vbo: GLuint = 0;
@@ -79,9 +81,9 @@ fn main() -> Res<()> {
   let mut frame_texture: GLuint = 0;
   unsafe {
     fbo = make_framebuffer();
-    frame_texture = make_frame_texture(fbo, f_width, f_height);
+    frame_texture = make_frame_texture(fbo, f_width as _, f_height as _);
     attach_texture_to_framebuffer(fbo, frame_texture);
-    rbo = make_render_buffer(fbo, f_width, f_height);
+    rbo = make_render_buffer(fbo, f_width as _, f_height as _);
     complete_framebuffer(fbo, rbo);
     let tup = make_frame_quad(frame_program);
     frame_vbo = tup.0;
@@ -90,8 +92,6 @@ fn main() -> Res<()> {
     using_frame_buffer = true;
   }
 
-  
-  println!("time to setup font shaders"); // DEBUG
   // setup program 2: Font shaders
   let vs = compile_shader(include_str!("shader/vert.glsl"), gl::VERTEX_SHADER)?;
   let fs = compile_shader(include_str!("shader/frag.glsl"), gl::FRAGMENT_SHADER)?;
@@ -121,6 +121,7 @@ fn main() -> Res<()> {
       gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as _);
       gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as _);
       let (width, height) = glyph_brush.texture_dimensions();
+      println!("glyph_brush w, h: {}, {}", width, height);
       gl::TexImage2D(
           gl::TEXTURE_2D,
           0,
@@ -175,6 +176,8 @@ fn main() -> Res<()> {
       .get_inner_size()
       .ok_or("get_inner_size = None")?
       .to_physical(window.get_hidpi_factor());
+  
+  let mut rng = rand::thread_rng();
 
   // println!("Time to enter events loop"); // DEBUG
   while running {
@@ -238,7 +241,7 @@ fn main() -> Res<()> {
       }
     });
     
-    let width = dimensions.width as f32;
+    let width = dimensions.width as f32; // use this if you render to viewport
     let height = dimensions.height as _;
     let scale = Scale::uniform((font_size * window.get_hidpi_factor() as f32).round());
     
@@ -353,6 +356,7 @@ fn main() -> Res<()> {
       BrushAction::ReDraw => {}
     }
 
+    // DRAW
     unsafe {
       // pass 1
       gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
@@ -369,6 +373,9 @@ fn main() -> Res<()> {
       gl::Clear(gl::COLOR_BUFFER_BIT);
       gl::BindTexture(gl::TEXTURE_2D, frame_texture);
       gl::UseProgram(frame_program);
+      let uloc = gl::GetUniformLocation(frame_program, CString::new("baseRand")?.as_ptr());
+      let rand_val: f32 = rng.gen();
+      gl::Uniform1f(uloc, rand_val);
       gl::BindVertexArray(frame_vao);
       gl::DrawArrays(gl::TRIANGLES, 0, 6);
     }

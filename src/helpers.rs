@@ -7,7 +7,7 @@ use std::{
 
 pub type Res<T> = Result<T, Box<std::error::Error>>;
 /// `[left_top * 3, right_bottom * 2, tex_left_top * 2, tex_right_bottom * 2, color * 4]`
-pub type Vertex = [GLfloat; 13];
+pub type VertexForGlyph = [GLfloat; 13];
 
 // main was here
 
@@ -93,7 +93,7 @@ pub fn to_vertex(
     color,
     z,
   }: glyph_brush::GlyphVertex,
-) -> Vertex {
+) -> VertexForGlyph {
   let gl_bounds = Rect {
       min: point(
           2.0 * (bounds.min.x / screen_w - 0.5),

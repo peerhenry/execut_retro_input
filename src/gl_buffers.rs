@@ -53,6 +53,32 @@ pub unsafe fn complete_framebuffer(framebuffer: GLuint, rbo: GLuint) {
   gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
 }
 
+pub unsafe fn setup_attribs(frame_program: GLuint, vertex_byte_size: GLsizei, use_divisor: bool, attribs: &[(&str, i32)]) -> Res<()> {
+  // set attributes
+  let mut offset = 0;
+  println!("vertex_byte_size {}", vertex_byte_size); // DEBUG
+  for (v_field, float_count) in attribs {
+    let attr = gl::GetAttribLocation(frame_program, CString::new(*v_field)?.as_ptr());
+    // println!("setting up attrib {}, {}, {}", v_field, float_count, attr); // DEBUG
+    if attr < 0 {
+      return Err(format!("{} GetAttribLocation -> {}", v_field, attr).into());
+    }
+    // println!("we calling VertexAttribPointer {}, {}, {}, {}", attr as GLuint, *float_count, vertex_byte_size, offset); // DEBUG
+    gl::VertexAttribPointer(
+      attr as _,        // location
+      *float_count,     // size
+      gl::FLOAT,        // type
+      gl::FALSE as _,   // normalized
+      vertex_byte_size, // stride
+      offset as _,      // offset
+    );
+    gl::EnableVertexAttribArray(attr as _);
+    if use_divisor { gl::VertexAttribDivisor(attr as _, 1); }
+    offset += float_count * 4;
+  }
+  Ok(())
+}
+
 pub unsafe fn make_frame_quad(frame_program: GLuint) -> (GLuint, GLuint) {
     let vdata: Vec<GLfloat> = vec![
     // X    Y     U   V
@@ -86,30 +112,4 @@ pub unsafe fn make_frame_quad(frame_program: GLuint) -> (GLuint, GLuint) {
   gl::BindBuffer(gl::ARRAY_BUFFER, 0);
   gl::BindVertexArray(0);
   (vbo, vao)
-}
-
-pub unsafe fn setup_attribs(frame_program: GLuint, vertex_byte_size: GLsizei, use_divisor: bool, attribs: &[(&str, i32)]) -> Res<()> {
-  // set attributes
-  let mut offset = 0;
-  println!("vertex_byte_size {}", vertex_byte_size); // DEBUG
-  for (v_field, float_count) in attribs {
-    let attr = gl::GetAttribLocation(frame_program, CString::new(*v_field)?.as_ptr());
-    // println!("setting up attrib {}, {}, {}", v_field, float_count, attr); // DEBUG
-    if attr < 0 {
-      return Err(format!("{} GetAttribLocation -> {}", v_field, attr).into());
-    }
-    // println!("we calling VertexAttribPointer {}, {}, {}, {}", attr as GLuint, *float_count, vertex_byte_size, offset); // DEBUG
-    gl::VertexAttribPointer(
-      attr as _,        // location
-      *float_count,     // size
-      gl::FLOAT,        // type
-      gl::FALSE as _,   // normalized
-      vertex_byte_size, // stride
-      offset as _,      // offset
-    );
-    gl::EnableVertexAttribArray(attr as _);
-    if use_divisor { gl::VertexAttribDivisor(attr as _, 1); }
-    offset += float_count * 4;
-  }
-  Ok(())
 }

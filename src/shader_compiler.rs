@@ -5,6 +5,23 @@ use std::{
 use gl::types::*;
 use super::Res;
 
+pub struct ShaderProgram {
+  pub vertex_shader: GLuint,
+  pub fragment_shader: GLuint,
+  pub handle: GLuint
+}
+
+pub fn build_shader_program(vs_glsl: &str, fs_glsl: &str) -> Res<ShaderProgram> {
+  let vs = compile_shader(vs_glsl, gl::VERTEX_SHADER)?;
+  let fs = compile_shader(fs_glsl, gl::FRAGMENT_SHADER)?;
+  let program = link_program(vs, fs)?;
+  Ok(ShaderProgram {
+    vertex_shader: vs,
+    fragment_shader: fs,
+    handle: program
+  })
+}
+
 pub fn compile_shader(src: &str, ty: GLenum) -> Res<GLuint> {
   let shader;
   unsafe {

@@ -1,9 +1,7 @@
-trait Scene {
-    fn new() -> Self;
-
-    fn init();
-
-    fn update();
-
-    fn draw();
+pub trait Scene {
+  fn new(vs_glsl: &str, fs_glsl: &str) -> Self;
+  fn init(&mut self);
+  fn update(&self);
+  fn draw(&self);
+  fn cleanup(&self);
 }

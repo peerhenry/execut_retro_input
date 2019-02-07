@@ -1,9 +1,4 @@
-use std::{
-    env,
-    ffi::CString,
-    io::{self, Write},
-    mem, ptr, 
-};
+use std::ffi::CString;
 use gl::types::*;
 use rand::*;
 use crate::scene::*;

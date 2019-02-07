@@ -27,9 +27,9 @@ pub struct TextScene<'a> {
 impl TextScene<'_> {
   pub fn new(vs_glsl: &str, fs_glsl: &str, window: &glutin::GlWindow) -> Self {
     let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
-    let mut glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
-    let mut text: String = include_str!("text/lipsum.txt").into();
-    let mut dimensions = window
+    let glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
+    let text: String = include_str!("text/lipsum.txt").into();
+    let dimensions = window
       .get_inner_size()
       .ok_or("get_inner_size = None").unwrap()
       .to_physical(window.get_hidpi_factor());

@@ -1,0 +1,274 @@
+use glutin::dpi::PhysicalSize;
+use std::{
+    ffi::CString,
+    mem, ptr, 
+};
+use gl::types::*;
+use glyph_brush::{rusttype::*, *};
+use crate::scene::*;
+use crate::shader_compiler::*;
+use crate::gl_buffers::*;
+use crate::gl_error_handler::*;
+use crate::helpers_for_glyph::*;
+
+pub struct TextScene<'a> {
+  program: ShaderProgram,
+  vbo: GLuint,
+  vao: GLuint,
+  glyph_texture: GLuint,
+  glyph_brush: GlyphBrush<'a>,
+  text: String,
+  pub font_size: f32,
+  vertex_count: usize,
+  vertex_max: usize,
+  pub dimensions: PhysicalSize
+}
+
+impl TextScene<'_> {
+  pub fn new(vs_glsl: &str, fs_glsl: &str, window: &glutin::GlWindow) -> Self {
+    let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
+    let mut glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
+    let mut text: String = include_str!("text/lipsum.txt").into();
+    let mut dimensions = window
+      .get_inner_size()
+      .ok_or("get_inner_size = None").unwrap()
+      .to_physical(window.get_hidpi_factor());
+    TextScene {
+      program: build_shader_program(vs_glsl, fs_glsl).unwrap(),
+      vbo: 0,
+      vao: 0,
+      glyph_texture: 0,
+      glyph_brush,
+      text,
+      font_size: 18.0,
+      vertex_count: 0,
+      vertex_max: 0,
+      dimensions
+    }
+  }
+
+  pub fn pop(&mut self) {
+    self.text.pop();
+  }
+
+  pub fn push(&mut self, c: char) {
+    if c != '\u{7f}' && c != '\u{8}' {
+      self.text.push(c);
+    }
+  }
+
+  pub fn update(&mut self, window: &glutin::GlWindow) {
+    // vvvv glyph brush queue vvvv
+    let width = self.dimensions.width as f32; // use this if you render to viewport
+    let height = self.dimensions.height as _;
+    let scale = Scale::uniform((self.font_size * window.get_hidpi_factor() as f32).round());
+    
+    // println!("Time queu glyph brush section 1"); // DEBUG
+    self.glyph_brush.queue(Section {
+      text: &self.text,
+      scale,
+      screen_position: (0.0, 0.0),
+      bounds: (width / 3.15, height),
+      color: [0.9, 0.3, 0.3, 1.0],
+      ..Section::default()
+    });
+
+    // println!("Time queu glyph brush section 2"); // DEBUG
+    self.glyph_brush.queue(Section {
+      text: &self.text,
+      scale,
+      screen_position: (width / 2.0, height / 2.0),
+      bounds: (width / 3.15, height),
+      color: [0.3, 0.9, 0.3, 1.0],
+      layout: Layout::default()
+        .h_align(HorizontalAlign::Center)
+        .v_align(VerticalAlign::Center),
+      ..Section::default()
+    });
+
+    // println!("Time queu glyph brush section 3"); // DEBUG
+    self.glyph_brush.queue(Section {
+      text: &self.text,
+      scale,
+      screen_position: (width, height),
+      bounds: (width / 3.15, height),
+      color: [0.3, 0.3, 0.9, 1.0],
+      layout: Layout::default()
+        .h_align(HorizontalAlign::Right)
+        .v_align(VerticalAlign::Bottom),
+      ..Section::default()
+    });
+    // ^^^^ glyph brush queue ^^^^
+
+    // vvvv handle glyph brush action vvvv
+    // println!("Time to loop over brush actions"); // DEBUG
+    let mut brush_action;
+    loop {
+      unsafe { gl::BindTexture(gl::TEXTURE_2D, self.glyph_texture); }
+      brush_action = self.glyph_brush.process_queued(
+        (width as _, height as _),
+        |rect, tex_data| unsafe {
+          // Update part of gpu texture with new glyph alpha values
+          gl::TexSubImage2D(
+            gl::TEXTURE_2D,
+            0,
+            rect.min.x as _,
+            rect.min.y as _,
+            rect.width() as _,
+            rect.height() as _,
+            gl::RED,
+            gl::UNSIGNED_BYTE,
+            tex_data.as_ptr() as _,
+          );
+          gl_assert_ok!();
+        },
+        to_vertex,
+      );
+
+      // println!("Time to match brush actions for resize"); // DEBUG
+      match brush_action {
+        Ok(_) => break,
+        Err(BrushError::TextureTooSmall { suggested, .. }) => unsafe {
+          let (new_width, new_height) = suggested;
+          eprint!("\r                            \r");
+          eprintln!("Resizing glyph texture -> {}x{}", new_width, new_height);
+          // Recreate texture as a larger size to fit more
+          gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            gl::RED as _,
+            new_width as _,
+            new_height as _,
+            0,
+            gl::RED,
+            gl::UNSIGNED_BYTE,
+            ptr::null(),
+          );
+          gl_assert_ok!();
+          self.glyph_brush.resize_texture(new_width, new_height);
+        },
+      }
+    }
+    // println!("Time to match brush actions for draw"); // DEBUG
+    match brush_action.unwrap() {
+      BrushAction::Draw(vertices) => {
+        // Draw new vertices
+        self.vertex_count = vertices.len();
+        unsafe {
+          if self.vertex_max < self.vertex_count {
+            gl::BufferData(
+              gl::ARRAY_BUFFER,
+              (self.vertex_count * mem::size_of::<VertexForGlyph>()) as GLsizeiptr,
+              vertices.as_ptr() as _,
+              gl::DYNAMIC_DRAW,
+            );
+          } else {
+            gl::BufferSubData(
+              gl::ARRAY_BUFFER,
+              0,
+              (self.vertex_count * mem::size_of::<VertexForGlyph>()) as GLsizeiptr,
+              vertices.as_ptr() as _,
+            );
+          }
+        }
+        self.vertex_max = self.vertex_max.max(self.vertex_count);
+      }
+      BrushAction::ReDraw => {}
+    }
+    // ^^^^ handle glyph brush action ^^^^
+  }
+}
+
+// ==== impl Scene ===
+
+impl Scene for TextScene<'_> {
+  fn init(&mut self) {
+    unsafe {
+      let mut vao = 0;
+      let mut vbo = 0;
+      let mut glyph_texture = 0;
+      // Create Vertex Array Object
+      gl::GenVertexArrays(1, &mut vao);
+      gl::BindVertexArray(vao);
+
+      // Create a Vertex Buffer Object
+      gl::GenBuffers(1, &mut vbo);
+      gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+
+      {
+        // Create a texture for the glyphs
+        // The texture holds 1 byte per pixel as alpha data
+        gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
+        gl::GenTextures(1, &mut glyph_texture);
+        gl::BindTexture(gl::TEXTURE_2D, glyph_texture);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as _);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as _);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as _);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as _);
+        let (width, height) = self.glyph_brush.texture_dimensions();
+        println!("glyph_brush w, h: {}, {}", width, height);
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            gl::RED as _,
+            width as _,
+            height as _,
+            0,
+            gl::RED,
+            gl::UNSIGNED_BYTE,
+            ptr::null(),
+        );
+        self.vao = vao;
+        self.vbo = vbo;
+        self.glyph_texture = glyph_texture;
+        gl_assert_ok!();
+      }
+      
+      // Use shader program
+      gl::UseProgram(self.program.handle);
+      gl::BindFragDataLocation(self.program.handle, 0, CString::new("out_color").unwrap().as_ptr());
+
+      // Specify the layout of the vertex data
+      setup_attribs(
+        self.program.handle, 
+        mem::size_of::<VertexForGlyph>() as _, 
+        true,
+        &[
+          ("left_top", 3),
+          ("right_bottom", 2),
+          ("tex_left_top", 2),
+          ("tex_right_bottom", 2),
+          ("color", 4),
+        ]
+      ).unwrap();
+
+      // Enabled alpha blending
+      gl::Enable(gl::BLEND);
+      gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+      // Use srgb for consistency with other examples
+      gl::Enable(gl::FRAMEBUFFER_SRGB);
+      gl::ClearColor(0.02, 0.02, 0.02, 1.0);
+      // vao is used after this somewhere...
+    }
+  }
+
+  fn draw(&self) {
+    unsafe {
+      gl::ClearColor(0.02, 0.02, 0.02, 1.0);
+      gl::Clear(gl::COLOR_BUFFER_BIT);
+      gl::UseProgram(self.program.handle);
+      gl::BindTexture(gl::TEXTURE_2D, self.glyph_texture);
+      gl::BindVertexArray(self.vao);
+      gl::DrawArraysInstanced(gl::TRIANGLE_STRIP, 0, 4, self.vertex_count as _);
+    }
+  }
+
+  fn cleanup(&self) {
+    unsafe {
+      self.program.cleanup();
+      gl::DeleteBuffers(1, &self.vbo);
+      gl::DeleteVertexArrays(1, &self.vao);
+      gl::DeleteTextures(1, &self.glyph_texture);
+    }
+  }
+}

@@ -32,6 +32,8 @@ mod scene;
 use scene::*;
 mod noise_scene;
 use noise_scene::*;
+mod text_scene;
+use text_scene::*;
 
 pub type Res<T> = Result<T, Box<std::error::Error>>;
 
@@ -88,93 +90,11 @@ fn main() -> Res<()> {
   let mut noise_scene = NoiseScene::new(include_str!("shader/noise.vert.glsl"), include_str!("shader/noise.frag.glsl"));
   noise_scene.init();
 
-  // vvvv setup program 2: Font shaders vvvv
-  let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
-  let mut glyph_brush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
+  let mut text_scene = TextScene::new(include_str!("shader/text.vert.glsl"), include_str!("shader/text.frag.glsl"), &window);
+  text_scene.init();
 
-  let vs = compile_shader(include_str!("shader/text.vert.glsl"), gl::VERTEX_SHADER)?;
-  let fs = compile_shader(include_str!("shader/text.frag.glsl"), gl::FRAGMENT_SHADER)?;
-  let program = link_program(vs, fs)?;
-
-  let mut vao = 0;
-  let mut vbo = 0;
-  let mut glyph_texture = 0;
-
-  unsafe {
-    // Create Vertex Array Object
-    gl::GenVertexArrays(1, &mut vao);
-    gl::BindVertexArray(vao);
-
-    // Create a Vertex Buffer Object
-    gl::GenBuffers(1, &mut vbo);
-    gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-
-    {
-      // Create a texture for the glyphs
-      // The texture holds 1 byte per pixel as alpha data
-      gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);
-      gl::GenTextures(1, &mut glyph_texture);
-      gl::BindTexture(gl::TEXTURE_2D, glyph_texture);
-      gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE as _);
-      gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as _);
-      gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as _);
-      gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as _);
-      let (width, height) = glyph_brush.texture_dimensions();
-      println!("glyph_brush w, h: {}, {}", width, height);
-      gl::TexImage2D(
-          gl::TEXTURE_2D,
-          0,
-          gl::RED as _,
-          width as _,
-          height as _,
-          0,
-          gl::RED,
-          gl::UNSIGNED_BYTE,
-          ptr::null(),
-      );
-      gl_assert_ok!();
-    }
-
-    // Use shader program
-    gl::UseProgram(program);
-    gl::BindFragDataLocation(program, 0, CString::new("out_color")?.as_ptr());
-
-    // Specify the layout of the vertex data
-    setup_attribs(
-      program, 
-      mem::size_of::<VertexForGlyph>() as _, 
-      true,
-      &[
-        ("left_top", 3),
-        ("right_bottom", 2),
-        ("tex_left_top", 2),
-        ("tex_right_bottom", 2),
-        ("color", 4),
-      ]
-    )?;
-
-    // Enabled alpha blending
-    gl::Enable(gl::BLEND);
-    gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-    // Use srgb for consistency with other examples
-    gl::Enable(gl::FRAMEBUFFER_SRGB);
-    gl::ClearColor(0.02, 0.02, 0.02, 1.0);
-    // vao is used after this somewhere...
-  }
-  // */
-  // ^^^^ setup program 2: Font shaders ^^^^
-
-  let mut text: String = include_str!("text/lipsum.txt").into();
-  let mut font_size: f32 = 18.0;
   let mut loop_helper = spin_sleep::LoopHelper::builder().build_with_target_rate(250.0);
   let mut running = true;
-  let mut vertex_count = 0;
-  let mut vertex_max = vertex_count;
-  let mut dimensions = window
-      .get_inner_size()
-      .ok_or("get_inner_size = None")?
-      .to_physical(window.get_hidpi_factor());
-  let mut rng = rand::thread_rng();
 
   // println!("Time to enter events loop"); // DEBUG
   while running {
@@ -189,7 +109,8 @@ fn main() -> Res<()> {
             let dpi = window.get_hidpi_factor();
             window.resize(size.to_physical(dpi));
             if let Some(ls) = window.get_inner_size() {
-              dimensions = ls.to_physical(dpi);
+              let dimensions = ls.to_physical(dpi);
+              text_scene.dimensions = dimensions;
               unsafe {
                 gl::Viewport(0, 0, dimensions.width as _, dimensions.height as _);
               }
@@ -206,13 +127,13 @@ fn main() -> Res<()> {
           } => match keypress {
             VirtualKeyCode::Escape => running = false,
             VirtualKeyCode::Back => {
-              text.pop();
+              text_scene.pop();
             }
             _ => (),
           },
           WindowEvent::ReceivedCharacter(c) => {
             if c != '\u{7f}' && c != '\u{8}' {
-              text.push(c);
+              text_scene.push(c);
             }
           }
           WindowEvent::MouseWheel {
@@ -220,17 +141,18 @@ fn main() -> Res<()> {
             ..
           } => {
             // increase/decrease font size
-            let old_size = font_size;
-            let mut size = font_size;
+            let old_size = text_scene.font_size;
+            let mut size = text_scene.font_size;
             if y > 0.0 {
               size += (size / 4.0).max(2.0)
             } else {
                 size *= 4.0 / 5.0
             };
-            font_size = size.max(1.0).min(2000.0);
-            if (font_size - old_size).abs() > 1e-2 {
+            let new_size = size.max(1.0).min(2000.0);
+            text_scene.font_size = new_size;
+            if (new_size - old_size).abs() > 1e-2 {
               eprint!("\r                            \r");
-              eprint!("font-size -> {:.1}", font_size);
+              eprint!("font-size -> {:.1}", new_size);
               let _ = io::stderr().flush();
             }
           }
@@ -239,137 +161,14 @@ fn main() -> Res<()> {
       }
     });
     // ^^^^ events loop ^^^^
-    
-    // vvvv glyph brush queue vvvv
-    let width = dimensions.width as f32; // use this if you render to viewport
-    let height = dimensions.height as _;
-    let scale = Scale::uniform((font_size * window.get_hidpi_factor() as f32).round());
-    
-    // println!("Time queu glyph brush section 1"); // DEBUG
-    glyph_brush.queue(Section {
-      text: &text,
-      scale,
-      screen_position: (0.0, 0.0),
-      bounds: (width / 3.15, height),
-      color: [0.9, 0.3, 0.3, 1.0],
-      ..Section::default()
-    });
 
-    // println!("Time queu glyph brush section 2"); // DEBUG
-    glyph_brush.queue(Section {
-      text: &text,
-      scale,
-      screen_position: (width / 2.0, height / 2.0),
-      bounds: (width / 3.15, height),
-      color: [0.3, 0.9, 0.3, 1.0],
-      layout: Layout::default()
-        .h_align(HorizontalAlign::Center)
-        .v_align(VerticalAlign::Center),
-      ..Section::default()
-    });
-
-    // println!("Time queu glyph brush section 3"); // DEBUG
-    glyph_brush.queue(Section {
-      text: &text,
-      scale,
-      screen_position: (width, height),
-      bounds: (width / 3.15, height),
-      color: [0.3, 0.3, 0.9, 1.0],
-      layout: Layout::default()
-        .h_align(HorizontalAlign::Right)
-        .v_align(VerticalAlign::Bottom),
-      ..Section::default()
-    });
-    // ^^^^ glyph brush queue ^^^^
-
-    // vvvv handle glyph brush action vvvv
-    // println!("Time to loop over brush actions"); // DEBUG
-    let mut brush_action;
-    loop {
-      unsafe { gl::BindTexture(gl::TEXTURE_2D, glyph_texture); }
-      brush_action = glyph_brush.process_queued(
-        (width as _, height as _),
-        |rect, tex_data| unsafe {
-          // Update part of gpu texture with new glyph alpha values
-          gl::TexSubImage2D(
-            gl::TEXTURE_2D,
-            0,
-            rect.min.x as _,
-            rect.min.y as _,
-            rect.width() as _,
-            rect.height() as _,
-            gl::RED,
-            gl::UNSIGNED_BYTE,
-            tex_data.as_ptr() as _,
-          );
-          gl_assert_ok!();
-        },
-        to_vertex,
-      );
-
-      // println!("Time to match brush actions for resize"); // DEBUG
-      match brush_action {
-        Ok(_) => break,
-        Err(BrushError::TextureTooSmall { suggested, .. }) => unsafe {
-          let (new_width, new_height) = suggested;
-          eprint!("\r                            \r");
-          eprintln!("Resizing glyph texture -> {}x{}", new_width, new_height);
-          // Recreate texture as a larger size to fit more
-          gl::TexImage2D(
-            gl::TEXTURE_2D,
-            0,
-            gl::RED as _,
-            new_width as _,
-            new_height as _,
-            0,
-            gl::RED,
-            gl::UNSIGNED_BYTE,
-            ptr::null(),
-          );
-          gl_assert_ok!();
-          glyph_brush.resize_texture(new_width, new_height);
-        },
-      }
-    }
-    // println!("Time to match brush actions for draw"); // DEBUG
-    match brush_action? {
-      BrushAction::Draw(vertices) => {
-        // Draw new vertices
-        vertex_count = vertices.len();
-        unsafe {
-          if vertex_max < vertex_count {
-            gl::BufferData(
-              gl::ARRAY_BUFFER,
-              (vertex_count * mem::size_of::<VertexForGlyph>()) as GLsizeiptr,
-              vertices.as_ptr() as _,
-              gl::DYNAMIC_DRAW,
-            );
-          } else {
-            gl::BufferSubData(
-              gl::ARRAY_BUFFER,
-              0,
-              (vertex_count * mem::size_of::<VertexForGlyph>()) as GLsizeiptr,
-              vertices.as_ptr() as _,
-            );
-          }
-        }
-        vertex_max = vertex_max.max(vertex_count);
-      }
-      BrushAction::ReDraw => {}
-    }
-    // ^^^^ handle glyph brush action ^^^^
+    text_scene.update(&window);
 
     // vvvv DRAW vvvv
     unsafe {
       // pass 1
       gl::BindFramebuffer(gl::FRAMEBUFFER, noise_scene.fbo);
-
-      gl::ClearColor(0.02, 0.02, 0.02, 1.0);
-      gl::Clear(gl::COLOR_BUFFER_BIT);
-      gl::UseProgram(program);
-      gl::BindTexture(gl::TEXTURE_2D, glyph_texture);
-      gl::BindVertexArray(vao);
-      gl::DrawArraysInstanced(gl::TRIANGLE_STRIP, 0, 4, vertex_count as _);
+      text_scene.draw();
 
       // pass 2
       noise_scene.draw();
@@ -385,18 +184,7 @@ fn main() -> Res<()> {
     // update loop helper
   }
 
-  // vvvv cleanup vvvv
-  unsafe {
-      gl::DeleteProgram(program);
-      gl::DeleteShader(fs);
-      gl::DeleteShader(vs);
-      gl::DeleteBuffers(1, &vbo);
-      gl::DeleteVertexArrays(1, &vao);
-      gl::DeleteTextures(1, &glyph_texture);
-  }
-  // ^^^^ cleanup ^^^^
-
+  text_scene.cleanup();
   noise_scene.cleanup();
-
   Ok(())
 }

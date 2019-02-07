@@ -21,8 +21,8 @@ pub struct NoiseScene {
   rbo: GLuint
 }
 
-impl Scene for NoiseScene {
-  fn new(vs_glsl: &str, fs_glsl: &str) -> Self {
+impl NoiseScene {
+  pub fn new(vs_glsl: &str, fs_glsl: &str) -> Self {
     let program = build_shader_program(vs_glsl, fs_glsl).unwrap();
     NoiseScene {
       program: program,
@@ -34,7 +34,9 @@ impl Scene for NoiseScene {
       rbo: 0
     }
   }
+}
 
+impl Scene for NoiseScene {
   fn init(&mut self) {
     unsafe {
       self.rand_uniform_loc = gl::GetUniformLocation(self.program.handle, CString::new("baseRand").unwrap().as_ptr());
@@ -51,10 +53,6 @@ impl Scene for NoiseScene {
       gl_assert_ok!();
       println!("vbo: {}, vao: {}, tex: {}, uniform: {}, fbo: {}, rbo: {}", self.vbo, self.vao, self.texture, self.rand_uniform_loc, self.fbo, self.rbo);
     }
-  }
-
-  fn update(&self) {
-
   }
 
   fn draw(&self) {
@@ -74,9 +72,7 @@ impl Scene for NoiseScene {
 
   fn cleanup(&self) {
     unsafe {
-      gl::DeleteProgram(self.program.handle);
-      gl::DeleteShader(self.program.fragment_shader);
-      gl::DeleteShader(self.program.vertex_shader);
+      self.program.cleanup();
       gl::DeleteBuffers(1, &self.vbo);
       gl::DeleteVertexArrays(1, &self.vao);
       gl::DeleteTextures(1, &self.texture);

@@ -11,6 +11,16 @@ pub struct ShaderProgram {
   pub handle: GLuint
 }
 
+impl ShaderProgram {
+  pub fn cleanup(&self) {
+    unsafe {
+      gl::DeleteProgram(self.handle);
+      gl::DeleteShader(self.fragment_shader);
+      gl::DeleteShader(self.vertex_shader);
+    }
+  }
+}
+
 pub fn build_shader_program(vs_glsl: &str, fs_glsl: &str) -> Res<ShaderProgram> {
   let vs = compile_shader(vs_glsl, gl::VERTEX_SHADER)?;
   let fs = compile_shader(fs_glsl, gl::FRAGMENT_SHADER)?;

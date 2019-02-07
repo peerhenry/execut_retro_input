@@ -16,9 +16,13 @@ use std::{
     io::{self, Write},
     mem, ptr, 
 };
+
 use gl::types::*;
-use glutin::{Api, GlContext, GlProfile, GlRequest};
+use glutin::{Api, GlContext, GlProfile, GlRequest, GlWindow};
 use glyph_brush::{rusttype::*, *};
+use spin_sleep::LoopHelper;
+use glutin::EventsLoop;
+
 mod helpers_for_glyph;
 use helpers_for_glyph::*;
 #[macro_use]
@@ -37,42 +41,7 @@ use text_scene::*;
 
 pub type Res<T> = Result<T, Box<std::error::Error>>;
 
-fn main() -> Res<()> {
-
-  // vvvv init context vvvv
-  env_logger::init();
-
-  if cfg!(target_os = "linux") {
-      // winit wayland is currently still wip
-      if env::var("WINIT_UNIX_BACKEND").is_err() {
-          env::set_var("WINIT_UNIX_BACKEND", "x11");
-      }
-      // disables vsync sometimes on x11
-      if env::var("vblank_mode").is_err() {
-          env::set_var("vblank_mode", "0");
-      }
-  }
-
-  let mut events = glutin::EventsLoop::new();
-  let title = "glyph_brush opengl example - scroll to size, type to modify";
-
-  let window = glutin::GlWindow::new(
-      glutin::WindowBuilder::new()
-          .with_dimensions((1600, 900).into())
-          .with_title(title),
-      glutin::ContextBuilder::new()
-          .with_gl_profile(GlProfile::Core)
-          .with_gl(GlRequest::Specific(Api::OpenGl, (4, 5))) // was 3.2
-          .with_srgb(true),
-      &events,
-  )?;
-  unsafe { window.make_current()? };
-
-  // Load the OpenGL function pointers
-  gl::load_with(|symbol| window.get_proc_address(symbol) as _);
-  // ^^^^ init context ^^^^
-
-  // todo do something with this for bloom effect
+  // todo: make a bloom scene
   /*
   let mut brightness_texture: GLuint = 0;
   brightness_texture = make_frame_texture(fbo, f_width as _, f_height as _);
@@ -87,104 +56,141 @@ fn main() -> Res<()> {
   gl_assert_ok!();
   */
 
+fn main() -> Res<()> {
+  let title = "glyph_brush opengl example - scroll to size, type to modify";
+  let (window, mut events) = init_context(title)?;
+
+  // INIT
   let mut noise_scene = NoiseScene::new(include_str!("shader/noise.vert.glsl"), include_str!("shader/noise.frag.glsl"));
   noise_scene.init();
-
   let mut text_scene = TextScene::new(include_str!("shader/text.vert.glsl"), include_str!("shader/text.frag.glsl"), &window);
   text_scene.init();
-
   let mut loop_helper = spin_sleep::LoopHelper::builder().build_with_target_rate(250.0);
   let mut running = true;
 
-  // println!("Time to enter events loop"); // DEBUG
+  // RUN
   while running {
-    // vvvv events loop vvvv
     loop_helper.loop_start();
-    events.poll_events(|event| {
-      use glutin::*;
-      if let Event::WindowEvent { event, .. } = event {
-        match event {
-          WindowEvent::CloseRequested => running = false,
-          WindowEvent::Resized(size) => {
-            let dpi = window.get_hidpi_factor();
-            window.resize(size.to_physical(dpi));
-            if let Some(ls) = window.get_inner_size() {
-              let dimensions = ls.to_physical(dpi);
-              text_scene.dimensions = dimensions;
-              unsafe {
-                gl::Viewport(0, 0, dimensions.width as _, dimensions.height as _);
-              }
-            }
-          }
-          WindowEvent::KeyboardInput {
-            input:
-              KeyboardInput {
-                state: ElementState::Pressed,
-                virtual_keycode: Some(keypress),
-                ..
-              },
-            ..
-          } => match keypress {
-            VirtualKeyCode::Escape => running = false,
-            VirtualKeyCode::Back => {
-              text_scene.pop();
-            }
-            _ => (),
-          },
-          WindowEvent::ReceivedCharacter(c) => {
-            if c != '\u{7f}' && c != '\u{8}' {
-              text_scene.push(c);
-            }
-          }
-          WindowEvent::MouseWheel {
-            delta: MouseScrollDelta::LineDelta(_, y),
-            ..
-          } => {
-            // increase/decrease font size
-            let old_size = text_scene.font_size;
-            let mut size = text_scene.font_size;
-            if y > 0.0 {
-              size += (size / 4.0).max(2.0)
-            } else {
-                size *= 4.0 / 5.0
-            };
-            let new_size = size.max(1.0).min(2000.0);
-            text_scene.font_size = new_size;
-            if (new_size - old_size).abs() > 1e-2 {
-              eprint!("\r                            \r");
-              eprint!("font-size -> {:.1}", new_size);
-              let _ = io::stderr().flush();
-            }
-          }
-          _ => {}
-        }
-      }
-    });
-    // ^^^^ events loop ^^^^
-
+    handle_events(&mut events, &mut running, &window, &mut text_scene)?;
     text_scene.update(&window);
-
-    // vvvv DRAW vvvv
-    unsafe {
-      // pass 1
-      gl::BindFramebuffer(gl::FRAMEBUFFER, noise_scene.fbo);
-      text_scene.draw();
-
-      // pass 2
-      noise_scene.draw();
-    }
-    window.swap_buffers()?;
-    // ^^^^ DRAW ^^^^
-
-    // update loop helper
-    if let Some(rate) = loop_helper.report_rate() {
-      window.set_title(&format!("{} {:.0} FPS", title, rate));
-    }
-    loop_helper.loop_sleep();
-    // update loop helper
+    draw(&noise_scene, &text_scene, &window)?;
+    update_loop_helper(&mut loop_helper, &window, title);
   }
 
+  // CLEANUP
   text_scene.cleanup();
   noise_scene.cleanup();
   Ok(())
+}
+
+fn init_context(title: &str) -> Res<(GlWindow, EventsLoop)> {
+  env_logger::init();
+  if cfg!(target_os = "linux") {
+      // winit wayland is currently still wip
+      if env::var("WINIT_UNIX_BACKEND").is_err() {
+          env::set_var("WINIT_UNIX_BACKEND", "x11");
+      }
+      // disables vsync sometimes on x11
+      if env::var("vblank_mode").is_err() {
+          env::set_var("vblank_mode", "0");
+      }
+  }
+  let events = glutin::EventsLoop::new();
+  let window = glutin::GlWindow::new(
+      glutin::WindowBuilder::new()
+          .with_dimensions((1600, 900).into())
+          .with_title(title),
+      glutin::ContextBuilder::new()
+          .with_gl_profile(GlProfile::Core)
+          .with_gl(GlRequest::Specific(Api::OpenGl, (4, 5))) // was 3.2
+          .with_srgb(true),
+      &events,
+  )?;
+  unsafe { window.make_current()? };
+  // Load the OpenGL function pointers
+  gl::load_with(|symbol| window.get_proc_address(symbol) as _);
+  Ok((window, events))
+}
+
+fn handle_events(events: &mut EventsLoop, running: &mut bool, window: &GlWindow, text_scene: &mut TextScene) -> Res<()> {
+  events.poll_events(|event| {
+    use glutin::*;
+    if let Event::WindowEvent { event, .. } = event {
+      match event {
+        WindowEvent::CloseRequested => *running = false,
+        WindowEvent::Resized(size) => {
+          let dpi = window.get_hidpi_factor();
+          window.resize(size.to_physical(dpi));
+          if let Some(ls) = window.get_inner_size() {
+            let dimensions = ls.to_physical(dpi);
+            text_scene.dimensions = dimensions;
+            unsafe {
+              gl::Viewport(0, 0, dimensions.width as _, dimensions.height as _);
+            }
+          }
+        }
+        WindowEvent::KeyboardInput {
+          input:
+            KeyboardInput {
+              state: ElementState::Pressed,
+              virtual_keycode: Some(keypress),
+              ..
+            },
+          ..
+        } => match keypress {
+          VirtualKeyCode::Escape => *running = false,
+          VirtualKeyCode::Back => {
+            text_scene.pop();
+          }
+          _ => (),
+        },
+        WindowEvent::ReceivedCharacter(c) => {
+          if c != '\u{7f}' && c != '\u{8}' {
+            text_scene.push(c);
+          }
+        }
+        WindowEvent::MouseWheel {
+          delta: MouseScrollDelta::LineDelta(_, y),
+          ..
+        } => {
+          // increase/decrease font size
+          let old_size = text_scene.font_size;
+          let mut size = text_scene.font_size;
+          if y > 0.0 {
+            size += (size / 4.0).max(2.0)
+          } else {
+              size *= 4.0 / 5.0
+          };
+          let new_size = size.max(1.0).min(2000.0);
+          text_scene.font_size = new_size;
+          if (new_size - old_size).abs() > 1e-2 {
+            eprint!("\r                            \r");
+            eprint!("font-size -> {:.1}", new_size);
+            let _ = io::stderr().flush();
+          }
+        }
+        _ => {}
+      }
+    }
+  });
+  Ok(())
+}
+
+fn draw(noise_scene: &NoiseScene, text_scene: &TextScene, window: &GlWindow) -> Res<()> {
+  unsafe {
+    // pass 1
+    gl::BindFramebuffer(gl::FRAMEBUFFER, noise_scene.fbo); // todo: set render target in scene
+    text_scene.draw();
+    // pass 2
+    noise_scene.draw();
+  }
+  window.swap_buffers()?;
+  Ok(())
+}
+
+fn update_loop_helper(loop_helper: &mut LoopHelper, window: &GlWindow, title: &str) {
+  if let Some(rate) = loop_helper.report_rate() {
+    window.set_title(&format!("{} {:.0} FPS", title, rate));
+  }
+  loop_helper.loop_sleep();
 }

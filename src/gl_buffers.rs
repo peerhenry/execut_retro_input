@@ -5,56 +5,6 @@ use std::{
 use gl::types::*;
 use super::Res;
 
-// to become obsolete
-pub unsafe fn make_framebuffer() -> GLuint {
-  let mut fbo: GLuint = 0;
-  gl::GenFramebuffers(1, &mut fbo);
-  fbo
-}
-
-// to become obsolete
-pub unsafe fn make_frame_texture(fbo: GLuint, width: GLsizei, height: GLsizei) -> GLuint {
-  let mut tbo: GLuint = 0;
-  gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-  gl::GenTextures(1, &mut tbo);
-  gl::BindTexture(gl::TEXTURE_2D, tbo);
-  gl::TexImage2D(gl::TEXTURE_2D, 0, gl::RGB as _, width, height, 0, gl::RGB as _, gl::UNSIGNED_BYTE, ptr::null());
-  gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as _); // param min filter
-  gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as _); // param mag filter
-  gl::BindTexture(gl::TEXTURE_2D, 0);
-  gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-  tbo
-}
-
-// to become obsolete
-pub unsafe fn attach_texture_to_framebuffer(fbo: GLuint, tbo: GLuint, color_attachment: GLenum) {
-  gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-  gl::FramebufferTexture2D(gl::FRAMEBUFFER, color_attachment, gl::TEXTURE_2D, tbo, 0); // attach texture 
-  gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-}
-
-// framebuffer must be bound for this one
-pub unsafe fn make_render_buffer(fbo: GLuint, width: GLsizei, height: GLsizei) -> GLuint {
-  gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
-  let mut rbo: GLuint = 0;
-  gl::GenRenderbuffers(1, &mut rbo);
-  gl::BindRenderbuffer(gl::RENDERBUFFER, rbo);
-  gl::RenderbufferStorage(gl::RENDERBUFFER, gl::DEPTH24_STENCIL8, width, height);
-  gl::BindRenderbuffer(gl::RENDERBUFFER, 0);
-  gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-  rbo
-}
-
-// to become obsolete
-pub unsafe fn attach_renderbuffer_to_framebuffer(framebuffer: GLuint, rbo: GLuint) {
-  gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
-  gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::RENDERBUFFER, rbo);
-  if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
-    panic!("framebuffer error");
-  }
-  gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
-}
-
 pub unsafe fn setup_attribs(frame_program: GLuint, vertex_byte_size: GLsizei, use_divisor: bool, attribs: &[(&str, i32)]) -> Res<()> {
   // set attributes
   let mut offset = 0;

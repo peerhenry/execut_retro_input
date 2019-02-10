@@ -1,7 +1,5 @@
 use std::{
-    env,
     ffi::CString,
-    io::{self, Write},
     mem, ptr, 
 };
 use gl::types::*;
@@ -44,7 +42,7 @@ pub unsafe fn make_render_buffer(fbo: GLuint, width: GLsizei, height: GLsizei) -
   rbo
 }
 
-pub unsafe fn complete_framebuffer(framebuffer: GLuint, rbo: GLuint) {
+pub unsafe fn attach_renderbuffer_to_framebuffer(framebuffer: GLuint, rbo: GLuint) {
   gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
   gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::RENDERBUFFER, rbo);
   if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {

@@ -5,6 +5,7 @@ use crate::scene::*;
 use crate::shader_compiler::*;
 use crate::gl_buffers::*;
 use crate::gl_error_handler::*;
+use crate::render_pass::*;
 
 pub struct NoiseScene {
   program: ShaderProgram,
@@ -13,7 +14,8 @@ pub struct NoiseScene {
   texture: GLuint,
   rand_uniform_loc: GLint,
   pub fbo: GLuint,
-  rbo: GLuint
+  rbo: GLuint,
+  noise: Option<RenderPass>
 }
 
 impl NoiseScene {
@@ -26,14 +28,24 @@ impl NoiseScene {
       texture: 0,
       rand_uniform_loc: -1,
       fbo: 0,
-      rbo: 0
+      rbo: 0,
+      noise: None
     }
   }
+}
+
+unsafe fn get_renderpass_locations(program_handle: GLuint) -> (GLuint, GLuint, GLuint, GLuint) {
+  let noise = gl::GetSubroutineIndex(program_handle, gl::FRAGMENT_SHADER, CString::new("noise").unwrap().as_ptr());
+  let extract_bright = gl::GetSubroutineIndex(program_handle, gl::FRAGMENT_SHADER, CString::new("extract_bright").unwrap().as_ptr());
+  let blurVertically = gl::GetSubroutineIndex(program_handle, gl::FRAGMENT_SHADER, CString::new("blurVertically").unwrap().as_ptr());
+  let blurHorizontallyAndJoin = gl::GetSubroutineIndex(program_handle, gl::FRAGMENT_SHADER, CString::new("blurHorizontallyAndJoin").unwrap().as_ptr());
+  (noise, extract_bright, blurVertically, blurHorizontallyAndJoin)
 }
 
 impl Scene for NoiseScene {
   fn init(&mut self) {
     unsafe {
+      self.noise = Some(RenderPass::new(self.program.handle, gl::FRAGMENT_SHADER, "noise"));
       self.rand_uniform_loc = gl::GetUniformLocation(self.program.handle, CString::new("baseRand").unwrap().as_ptr());
       self.fbo = make_framebuffer();
       let f_width: GLsizei = 1600; // 1920;
@@ -41,12 +53,12 @@ impl Scene for NoiseScene {
       self.texture = make_frame_texture(self.fbo, f_width as _, f_height as _);
       attach_texture_to_framebuffer(self.fbo, self.texture, gl::COLOR_ATTACHMENT0);
       self.rbo = make_render_buffer(self.fbo, f_width as _, f_height as _);
-      complete_framebuffer(self.fbo, self.rbo);
+      attach_renderbuffer_to_framebuffer(self.fbo, self.rbo);
       let (vbo, vao) = make_frame_quad(self.program.handle);
       self.vbo = vbo;
       self.vao = vao;
       gl_assert_ok!();
-      println!("vbo: {}, vao: {}, tex: {}, uniform: {}, fbo: {}, rbo: {}", self.vbo, self.vao, self.texture, self.rand_uniform_loc, self.fbo, self.rbo);
+      // println!("vbo: {}, vao: {}, tex: {}, uniform: {}, fbo: {}, rbo: {}", self.vbo, self.vao, self.texture, self.rand_uniform_loc, self.fbo, self.rbo);
     }
   }
 
@@ -57,6 +69,7 @@ impl Scene for NoiseScene {
       gl::Clear(gl::COLOR_BUFFER_BIT);
       gl::BindTexture(gl::TEXTURE_2D, self.texture);
       gl::UseProgram(self.program.handle);
+      if let Some(noise) = &self.noise { noise.set(); }
       let mut rng = rand::thread_rng();
       let rand_val: f32 = rng.gen();
       gl::Uniform1f(self.rand_uniform_loc, rand_val);

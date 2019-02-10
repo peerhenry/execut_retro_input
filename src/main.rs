@@ -18,6 +18,7 @@ mod gl_buffers;
 #[macro_use]
 mod gl_error_handler;
 mod helpers_for_glyph;
+mod render_pass;
 
 mod scene;
 use scene::*;
@@ -51,7 +52,7 @@ fn main() -> Res<()> {
   let title = "glyph_brush opengl example - scroll to size, type to modify";
   let (window, mut events) = init_context(title)?;
   // INIT
-  let mut noise_scene = NoiseScene::new(include_str!("shader/noise.vert.glsl"), include_str!("shader/noise.frag.glsl"));
+  let mut noise_scene = NoiseScene::new(include_str!("shader/retrofy.vert.glsl"), include_str!("shader/retrofy.frag.glsl"));
   noise_scene.init();
   let mut text_scene = TextScene::new(include_str!("shader/text.vert.glsl"), include_str!("shader/text.frag.glsl"), &window);
   text_scene.init();

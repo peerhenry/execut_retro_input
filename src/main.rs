@@ -69,7 +69,6 @@ fn main() -> Res<()> {
 
 fn draw(noise_scene: &NoiseScene, text_scene: &TextScene, window: &GlWindow) -> Res<()> {
   unsafe {
-    // gl::BindFramebuffer(gl::FRAMEBUFFER, noise_scene.fbo); // todo: set render target in scene
     text_scene.draw();
     noise_scene.draw();
   }

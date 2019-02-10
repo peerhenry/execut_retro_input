@@ -10,6 +10,7 @@ use crate::shader_compiler::*;
 use crate::gl_buffers::*;
 use crate::gl_error_handler::*;
 use crate::helpers_for_glyph::*;
+use crate::frame_buffer::*;
 
 pub struct TextScene<'a> {
   program: ShaderProgram,
@@ -21,11 +22,12 @@ pub struct TextScene<'a> {
   pub font_size: f32,
   vertex_count: usize,
   vertex_max: usize,
-  pub dimensions: PhysicalSize
+  pub dimensions: PhysicalSize,
+  frame_buffer: Option<Framebuffer>
 }
 
 impl TextScene<'_> {
-  pub fn new(vs_glsl: &str, fs_glsl: &str, window: &glutin::GlWindow) -> Self {
+  pub fn new(vs_glsl: &str, fs_glsl: &str, window: &glutin::GlWindow, frame_buffer: Option<Framebuffer>) -> Self {
     let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
     let glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
     let text: String = include_str!("text/lipsum.txt").into();
@@ -43,7 +45,8 @@ impl TextScene<'_> {
       font_size: 18.0,
       vertex_count: 0,
       vertex_max: 0,
-      dimensions
+      dimensions,
+      frame_buffer
     }
   }
 
@@ -252,15 +255,15 @@ impl Scene for TextScene<'_> {
     }
   }
 
-  fn draw(&self) {
-    unsafe {
-      gl::ClearColor(0.02, 0.02, 0.02, 1.0);
-      gl::Clear(gl::COLOR_BUFFER_BIT);
-      gl::UseProgram(self.program.handle);
-      gl::BindTexture(gl::TEXTURE_2D, self.glyph_texture);
-      gl::BindVertexArray(self.vao);
-      gl::DrawArraysInstanced(gl::TRIANGLE_STRIP, 0, 4, self.vertex_count as _);
-    }
+  unsafe fn draw(&self) {
+    if let Some(frame_buffer) = self.frame_buffer { frame_buffer.bind(); }
+    else { gl::BindFramebuffer(gl::FRAMEBUFFER, 0); }
+    gl::ClearColor(0.02, 0.02, 0.02, 1.0);
+    gl::Clear(gl::COLOR_BUFFER_BIT);
+    gl::UseProgram(self.program.handle);
+    gl::BindTexture(gl::TEXTURE_2D, self.glyph_texture);
+    gl::BindVertexArray(self.vao);
+    gl::DrawArraysInstanced(gl::TRIANGLE_STRIP, 0, 4, self.vertex_count as _);
   }
 
   fn cleanup(&self) {
@@ -269,6 +272,7 @@ impl Scene for TextScene<'_> {
       gl::DeleteBuffers(1, &self.vbo);
       gl::DeleteVertexArrays(1, &self.vao);
       gl::DeleteTextures(1, &self.glyph_texture);
+      if let Some(frame_buffer) = self.frame_buffer { frame_buffer.cleanup(); }
     }
   }
 }

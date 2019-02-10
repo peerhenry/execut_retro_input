@@ -5,12 +5,14 @@ use std::{
 use gl::types::*;
 use super::Res;
 
+// to become obsolete
 pub unsafe fn make_framebuffer() -> GLuint {
   let mut fbo: GLuint = 0;
   gl::GenFramebuffers(1, &mut fbo);
   fbo
 }
 
+// to become obsolete
 pub unsafe fn make_frame_texture(fbo: GLuint, width: GLsizei, height: GLsizei) -> GLuint {
   let mut tbo: GLuint = 0;
   gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
@@ -24,6 +26,7 @@ pub unsafe fn make_frame_texture(fbo: GLuint, width: GLsizei, height: GLsizei) -
   tbo
 }
 
+// to become obsolete
 pub unsafe fn attach_texture_to_framebuffer(fbo: GLuint, tbo: GLuint, color_attachment: GLenum) {
   gl::BindFramebuffer(gl::FRAMEBUFFER, fbo);
   gl::FramebufferTexture2D(gl::FRAMEBUFFER, color_attachment, gl::TEXTURE_2D, tbo, 0); // attach texture 
@@ -42,6 +45,7 @@ pub unsafe fn make_render_buffer(fbo: GLuint, width: GLsizei, height: GLsizei) -
   rbo
 }
 
+// to become obsolete
 pub unsafe fn attach_renderbuffer_to_framebuffer(framebuffer: GLuint, rbo: GLuint) {
   gl::BindFramebuffer(gl::FRAMEBUFFER, framebuffer);
   gl::FramebufferRenderbuffer(gl::FRAMEBUFFER, gl::DEPTH_STENCIL_ATTACHMENT, gl::RENDERBUFFER, rbo);

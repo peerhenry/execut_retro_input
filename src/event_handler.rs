@@ -31,13 +31,25 @@ pub fn handle_events(events: &mut EventsLoop, running: &mut bool, window: &GlWin
         } => match keypress {
           VirtualKeyCode::Escape => *running = false,
           VirtualKeyCode::Back => {
-            text_scene.pop();
-          }
+            // text_scene.pop();
+          },
+          VirtualKeyCode::Up => {
+            text_scene.up();
+          },
+          VirtualKeyCode::Down => {
+            text_scene.down();
+          },
+          VirtualKeyCode::Right => {
+            text_scene.increase();
+          },
+          VirtualKeyCode::Left => {
+            text_scene.decrease();
+          },
           _ => (),
         },
         WindowEvent::ReceivedCharacter(c) => {
           if c != '\u{7f}' && c != '\u{8}' {
-            text_scene.push(c);
+            // text_scene.push(c);
           }
         }
         WindowEvent::MouseWheel {

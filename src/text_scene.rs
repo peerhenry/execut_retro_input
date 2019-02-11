@@ -108,7 +108,7 @@ impl TextScene<'_> {
     }
   }
 
-  fn up(&mut self) {
+  pub fn up(&mut self) {
     let new_selected: SelectedInput;
     match self.selected_input {
       SelectedInput::Setting(setting) => {
@@ -126,7 +126,7 @@ impl TextScene<'_> {
     self.selected_input = new_selected;
   }
 
-  fn down(&mut self) {
+  pub fn down(&mut self) {
     let new_selected: SelectedInput;
     match self.selected_input {
       SelectedInput::Setting(setting) => {
@@ -144,12 +144,45 @@ impl TextScene<'_> {
     self.selected_input = new_selected;
   }
 
-  fn increase(&mut self) {
-
+  fn change_setting(&mut self, index: usize, delta: i32)
+  {
+    let new_val: i32 = self.setting_points[index].value as i32 + delta;
+    let new_remaining = self.points_remaining as i32- delta;
+    if new_remaining >= 0 && new_remaining <= 10 && new_val >= 0 {
+      self.setting_points[index].value = new_val as u32;
+      self.points_remaining = new_remaining as u32;
+    }
   }
 
-  fn decrease(&mut self) {
+  fn change(&mut self, delta: i32) {
+    match self.selected_input {
+      SelectedInput::Setting(setting) => {
+        match setting {
+          SpaceshipSetting::Shields => { self.change_setting(0, delta); },
+          SpaceshipSetting::Firepower => { self.change_setting(1, delta); },
+          SpaceshipSetting::DefenseThickness => { self.change_setting(2, delta); },
+          SpaceshipSetting::DodgeChance => { self.change_setting(3, delta); },
+        }
+      },
+      SelectedInput::Submit => {
+        self.selected_input = SelectedInput::Setting(SpaceshipSetting::Shields);
+        // todo:
+        self.points_remaining = 10;
+        self.setting_points[0].value = 0;
+        self.setting_points[1].value = 0;
+        self.setting_points[2].value = 0;
+        self.setting_points[3].value = 0;
+        println!("TODO: SAVE SETTINGS");
+      }
+    }
+  }
 
+  pub fn increase(&mut self) {
+    self.change(1);
+  }
+
+  pub fn decrease(&mut self) {
+    self.change(-1);
   }
 
   fn generate_string(&mut self) -> String {
@@ -179,14 +212,14 @@ impl TextScene<'_> {
     match self.selected_input {
       SelectedInput::Setting(setting) => {
         match setting {
-          SpaceshipSetting::Shields => { lines[7] = String::from("> Shields") },
-          SpaceshipSetting::Firepower => { lines[8] = String::from("> Firepower") },
-          SpaceshipSetting::DefenseThickness => { lines[9] = String::from("> DefenseThickness") },
-          SpaceshipSetting::DodgeChance => { lines[10] = String::from("> DodgeChance") },
+          SpaceshipSetting::Shields => { lines[7] = lines[7].replace("  ", "> "); },
+          SpaceshipSetting::Firepower => { lines[8] = lines[8].replace("  ", "> "); },
+          SpaceshipSetting::DefenseThickness => { lines[9] = lines[9].replace("  ", "> "); },
+          SpaceshipSetting::DodgeChance => { lines[10] = lines[10].replace("  ", "> "); },
         }
       },
       SelectedInput::Submit => {
-        lines[12] = String::from("> SUBMIT")
+        lines[12] = lines[12].replace("  ", "> "); 
       }
     }
     lines.join("\n")

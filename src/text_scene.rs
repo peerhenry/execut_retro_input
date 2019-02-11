@@ -12,6 +12,34 @@ use crate::gl_error_handler::*;
 use crate::helpers_for_glyph::*;
 use crate::frame_buffer::*;
 
+#[derive(Clone, Copy)]
+enum SpaceshipSetting {
+  Shields,
+  Firepower,
+  DefenseThickness,
+  DodgeChance
+}
+
+#[derive(Clone, Copy)]
+struct SpaceshipSettingValue {
+  setting: SpaceshipSetting,
+  value: u32
+}
+
+impl SpaceshipSettingValue {
+  fn new(setting: SpaceshipSetting) -> Self {
+    SpaceshipSettingValue {
+      setting,
+      value: 0
+    }
+  }
+}
+
+enum SelectedInput {
+  Setting(SpaceshipSetting),
+  Submit
+}
+
 pub struct TextScene<'a> {
   program: ShaderProgram,
   vbo: GLuint,
@@ -23,41 +51,145 @@ pub struct TextScene<'a> {
   vertex_count: usize,
   vertex_max: usize,
   pub dimensions: PhysicalSize,
-  frame_buffer: Option<Framebuffer>
+  frame_buffer: Option<Framebuffer>,
+  font_tex_loc: GLint,
+  selected_input: SelectedInput,
+  points_remaining: u32,
+  setting_points: [SpaceshipSettingValue; 4]
 }
 
 impl TextScene<'_> {
   pub fn new(vs_glsl: &str, fs_glsl: &str, window: &glutin::GlWindow, frame_buffer: Option<Framebuffer>) -> Self {
     let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
     let glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
-    let text: String = include_str!("text/lipsum.txt").into();
+    // let text: String = include_str!("text/lipsum.txt").into();
+    let text: String = include_str!("text/input.txt").into();
     let dimensions = window
       .get_inner_size()
       .ok_or("get_inner_size = None").unwrap()
       .to_physical(window.get_hidpi_factor());
+    let program = build_shader_program(vs_glsl, fs_glsl).unwrap();
+    let font_tex_loc: GLint;
+    unsafe { font_tex_loc = gl::GetUniformLocation(program.handle, CString::new("baseRand").unwrap().as_ptr()); }
+    let settings: [SpaceshipSettingValue; 4] = [
+      SpaceshipSettingValue::new(SpaceshipSetting::Shields),
+      SpaceshipSettingValue::new(SpaceshipSetting::Firepower),
+      SpaceshipSettingValue::new(SpaceshipSetting::DefenseThickness),
+      SpaceshipSettingValue::new(SpaceshipSetting::DodgeChance)
+    ];
     TextScene {
-      program: build_shader_program(vs_glsl, fs_glsl).unwrap(),
+      program,
       vbo: 0,
       vao: 0,
       glyph_texture: 0,
       glyph_brush,
       text,
-      font_size: 18.0,
+      font_size: 36.0, // was 18.0 from example
       vertex_count: 0,
       vertex_max: 0,
       dimensions,
-      frame_buffer
+      frame_buffer,
+      font_tex_loc,
+      selected_input: SelectedInput::Setting(SpaceshipSetting::Shields),
+      points_remaining: 10,
+      setting_points: settings
     }
   }
 
+  // to become obsolete
   pub fn pop(&mut self) {
     self.text.pop();
   }
 
+  // to become obsolete
   pub fn push(&mut self, c: char) {
     if c != '\u{7f}' && c != '\u{8}' {
       self.text.push(c);
     }
+  }
+
+  fn up(&mut self) {
+    let new_selected: SelectedInput;
+    match self.selected_input {
+      SelectedInput::Setting(setting) => {
+        match setting {
+          SpaceshipSetting::Shields => { new_selected = SelectedInput::Submit; },
+          SpaceshipSetting::Firepower => { new_selected = SelectedInput::Setting(SpaceshipSetting::Shields); },
+          SpaceshipSetting::DefenseThickness => { new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower); },
+          SpaceshipSetting::DodgeChance => { new_selected = SelectedInput::Setting(SpaceshipSetting::DefenseThickness); },
+        }
+      },
+      SelectedInput::Submit => {
+        new_selected = SelectedInput::Setting(SpaceshipSetting::DodgeChance);
+      }
+    }
+    self.selected_input = new_selected;
+  }
+
+  fn down(&mut self) {
+    let new_selected: SelectedInput;
+    match self.selected_input {
+      SelectedInput::Setting(setting) => {
+        match setting {
+          SpaceshipSetting::Shields => { new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower); },
+          SpaceshipSetting::Firepower => { new_selected = SelectedInput::Setting(SpaceshipSetting::DefenseThickness); },
+          SpaceshipSetting::DefenseThickness => { new_selected = SelectedInput::Setting(SpaceshipSetting::DodgeChance); },
+          SpaceshipSetting::DodgeChance => { new_selected = SelectedInput::Submit; },
+        }
+      },
+      SelectedInput::Submit => {
+        new_selected = SelectedInput::Setting(SpaceshipSetting::Shields);
+      }
+    }
+    self.selected_input = new_selected;
+  }
+
+  fn increase(&mut self) {
+
+  }
+
+  fn decrease(&mut self) {
+
+  }
+
+  fn generate_string(&mut self) -> String {
+    let mut lines: Vec<String> = vec![
+      String::from("Welcome honorable guest."),
+      String::from(""),
+      String::from("Prepare for space invaders!"),
+      String::from("Please input your spaceship settings..."),
+      String::from(""),
+      String::from(format!("Points remaining: {}", self.points_remaining)),
+      String::from(""),
+    ];
+    for (i, elem) in self.setting_points.iter_mut().enumerate() {
+      let settingName: &str;
+      let points: u32 = elem.value;
+      match elem.setting {
+        SpaceshipSetting::Shields => { settingName = "  Shields"; },
+        SpaceshipSetting::Firepower => { settingName = "  Firepower"; },
+        SpaceshipSetting::DefenseThickness => { settingName = "  DefenseThickness"; },
+        SpaceshipSetting::DodgeChance => { settingName = "  DodgeChance"; },
+      }
+      let new_line: String = format!("{}: {}", settingName, points);
+      lines.push(new_line);
+    }
+    lines.push(String::from(" "));
+    lines.push(String::from("  SUBMIT"));
+    match self.selected_input {
+      SelectedInput::Setting(setting) => {
+        match setting {
+          SpaceshipSetting::Shields => { lines[7] = String::from("> Shields") },
+          SpaceshipSetting::Firepower => { lines[8] = String::from("> Firepower") },
+          SpaceshipSetting::DefenseThickness => { lines[9] = String::from("> DefenseThickness") },
+          SpaceshipSetting::DodgeChance => { lines[10] = String::from("> DodgeChance") },
+        }
+      },
+      SelectedInput::Submit => {
+        lines[12] = String::from("> SUBMIT")
+      }
+    }
+    lines.join("\n")
   }
 
   pub fn update(&mut self, window: &glutin::GlWindow) {
@@ -65,7 +197,17 @@ impl TextScene<'_> {
     let width = self.dimensions.width as f32; // use this if you render to viewport
     let height = self.dimensions.height as _;
     let scale = Scale::uniform((self.font_size * window.get_hidpi_factor() as f32).round());
-    
+    let input_string = self.generate_string();
+    self.glyph_brush.queue(Section {
+      text: &input_string,
+      scale,
+      screen_position: (width/20.0, height/20.0),
+      bounds: (width, height),
+      color: [0.3, 0.9, 0.3, 1.0],
+      ..Section::default()
+    });
+
+    /*
     // println!("Time queu glyph brush section 1"); // DEBUG
     self.glyph_brush.queue(Section {
       text: &self.text,
@@ -75,7 +217,7 @@ impl TextScene<'_> {
       color: [0.9, 0.3, 0.3, 1.0],
       ..Section::default()
     });
-
+    
     // println!("Time queu glyph brush section 2"); // DEBUG
     self.glyph_brush.queue(Section {
       text: &self.text,
@@ -102,6 +244,7 @@ impl TextScene<'_> {
       ..Section::default()
     });
     // ^^^^ glyph brush queue ^^^^
+    */
 
     // vvvv handle glyph brush action vvvv
     // println!("Time to loop over brush actions"); // DEBUG
@@ -262,6 +405,8 @@ impl Scene for TextScene<'_> {
     gl::Clear(gl::COLOR_BUFFER_BIT);
     gl::UseProgram(self.program.handle);
     gl::BindTexture(gl::TEXTURE_2D, self.glyph_texture);
+    gl::Uniform1i(self.font_tex_loc, 0);
+
     gl::BindVertexArray(self.vao);
     gl::DrawArraysInstanced(gl::TRIANGLE_STRIP, 0, 4, self.vertex_count as _);
   }

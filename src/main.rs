@@ -44,8 +44,10 @@ fn main() -> Res<()> {
   let f_height: GLsizei = 900; // 1080;
   let text_frame_buffer = Framebuffer::new(gl::TEXTURE0, f_width, f_height);
   let text_texture = text_frame_buffer.tex_handle;
+  let text_fbo_texture_number = text_frame_buffer.texture_number;
 
-  let mut noise_scene = NoiseScene::new(include_str!("shader/retrofy.vert.glsl"), include_str!("shader/retrofy.frag.glsl"), text_texture);
+  // generating other framebuffers in noisescene somehow interferes with text_scene; it renders semi-transparant quads instead of glyphs
+  let mut noise_scene = NoiseScene::new(include_str!("shader/retrofy.vert.glsl"), include_str!("shader/retrofy.frag.glsl"), text_texture, text_fbo_texture_number);
   noise_scene.init();
 
   let mut text_scene = TextScene::new(include_str!("shader/text.vert.glsl"), include_str!("shader/text.frag.glsl"), &window, Some(text_frame_buffer));

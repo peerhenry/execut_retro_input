@@ -1,0 +1,10 @@
+Welcome player - todo: random name generator
+
+Please input your spaceship settings.
+
+Points remaining: 10
+
+> Firepower: 0
+Shields: 0
+Defense thickness: 0
+Dodge chance: 0

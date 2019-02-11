@@ -13,29 +13,33 @@ pub struct NoiseScene {
   program: ShaderProgram,
   vbo: GLuint,
   vao: GLuint,
-  texture: GLuint,
+  text_texture_handle: GLuint,
   rand_uniform_loc: GLint,
+  texture_loc: GLint,
   noise: Option<RenderPass>,
   extract_bright: Option<RenderPass>,
   blur_vertically: Option<RenderPass>,
   blur_horizontally_and_join: Option<RenderPass>,
-  noise_fbo: Option<Framebuffer>
+  noise_fbo: Option<Framebuffer>,
+  text_texture_number: GLint
 }
 
 impl NoiseScene {
-  pub fn new(vs_glsl: &str, fs_glsl: &str, texture: GLuint) -> Self {
+  pub fn new(vs_glsl: &str, fs_glsl: &str, text_texture_handle: GLuint, text_texture_number: GLint) -> Self {
     let program = build_shader_program(vs_glsl, fs_glsl).unwrap();
     NoiseScene {
       program: program,
       vbo: 0,
       vao: 0,
-      texture,
+      text_texture_handle,
       rand_uniform_loc: -1,
       noise: None,
       extract_bright: None,
       blur_vertically: None,
       blur_horizontally_and_join: None,
-      noise_fbo: None
+      noise_fbo: None,
+      texture_loc: -1,
+      text_texture_number
     }
   }
 }
@@ -43,12 +47,17 @@ impl NoiseScene {
 impl Scene for NoiseScene {
   fn init(&mut self) {
     unsafe {
+      // fbos
+      // self.noise_fbo = Some(Framebuffer::new(gl::TEXTURE23, 1600, 900));
+      // render passes
       self.noise = Some(RenderPass::new(self.program.handle, gl::FRAGMENT_SHADER, "noise"));
       self.extract_bright = Some(RenderPass::new(self.program.handle, gl::FRAGMENT_SHADER, "extractBright"));
       self.blur_vertically = Some(RenderPass::new(self.program.handle, gl::FRAGMENT_SHADER, "blurVertically"));
       self.blur_horizontally_and_join = Some(RenderPass::new(self.program.handle, gl::FRAGMENT_SHADER, "blurHorizontallyAndJoin"));
+      // uniforms
       self.rand_uniform_loc = gl::GetUniformLocation(self.program.handle, CString::new("baseRand").unwrap().as_ptr());
-
+      self.texture_loc = gl::GetUniformLocation(self.program.handle, CString::new("screenTexture").unwrap().as_ptr());
+      // quad
       let (vbo, vao) = make_frame_quad(self.program.handle);
       self.vbo = vbo;
       self.vao = vao;
@@ -64,8 +73,9 @@ impl Scene for NoiseScene {
     else { gl::BindFramebuffer(gl::FRAMEBUFFER, 0); }
     gl::ClearColor(0.1, 0.0, 0.0, 1.0);
     gl::Clear(gl::COLOR_BUFFER_BIT);
-    gl::BindTexture(gl::TEXTURE_2D, self.texture);
     gl::UseProgram(self.program.handle);
+    gl::BindTexture(gl::TEXTURE_2D, self.text_texture_handle); // if not bound, we get the upside down red letters
+    gl::Uniform1i(self.texture_loc, self.text_texture_number); // this should be from the text_fbo
     if let Some(pass) = &self.noise { pass.set(); }
     let mut rng = rand::thread_rng();
     let rand_val: f32 = rng.gen();
@@ -74,10 +84,17 @@ impl Scene for NoiseScene {
     gl::DrawArrays(gl::TRIANGLES, 0, 6);
 
     // pass extract bright colors
-    /*gl::BindFramebuffer(gl::FRAMEBUFFER, self.bright_fbo);
+    /*gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+    // gl::BindFramebuffer(gl::DRAW_FRAMEBUFFER, 0);
+    if let Some(noise_fbo) = self.noise_fbo {
+      // gl::BindFramebuffer(gl::READ_FRAMEBUFFER, noise_fbo.handle);
+      gl::BindTexture(gl::TEXTURE_2D, noise_fbo.tex_handle); // without this, no noise
+      gl::Uniform1i(self.texture_loc, noise_fbo.texture_number); // if this is wrong, sampler2D will just give black pixels
+    } // if not bound, we get the upside down red letters
     if let Some(pass) = &self.extract_bright { pass.set(); }
-    gl::DrawArrays(gl::TRIANGLES, 0, 6);
+    gl::DrawArrays(gl::TRIANGLES, 0, 6);*/
 
+    /*
     // pass blur vertically
     gl::BindFramebuffer(gl::FRAMEBUFFER, self.blur_fbo);
     if let Some(pass) = &self.blur_vertically { pass.set(); }

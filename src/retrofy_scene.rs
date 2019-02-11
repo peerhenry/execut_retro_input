@@ -7,44 +7,55 @@ use crate::gl_buffers::*;
 use crate::gl_error_handler::*;
 use crate::render_pass::*;
 use crate::frame_buffer::*;
+use crate::RETRO_COLOR;
 
-// todo rename to RetrofyScene
-pub struct NoiseScene {
+pub struct RetrofyScene {
   program: ShaderProgram,
   vbo: GLuint,
   vao: GLuint,
   text_texture_handle: GLuint,
   rand_uniform_loc: GLint,
   texture_loc: GLint,
+  retro_color_loc: GLint,
+  line_pos_loc: GLint,
   noise: Option<RenderPass>,
   extract_bright: Option<RenderPass>,
   blur_vertically: Option<RenderPass>,
   blur_horizontally_and_join: Option<RenderPass>,
   noise_fbo: Option<Framebuffer>,
-  text_texture_number: GLint
+  text_texture_number: GLint,
+  line_pos: GLfloat
 }
 
-impl NoiseScene {
+impl RetrofyScene {
   pub fn new(vs_glsl: &str, fs_glsl: &str, text_texture_handle: GLuint, text_texture_number: GLint) -> Self {
     let program = build_shader_program(vs_glsl, fs_glsl).unwrap();
-    NoiseScene {
+    RetrofyScene {
       program: program,
       vbo: 0,
       vao: 0,
       text_texture_handle,
       rand_uniform_loc: -1,
+      retro_color_loc: -1,
+      line_pos_loc: -1,
       noise: None,
       extract_bright: None,
       blur_vertically: None,
       blur_horizontally_and_join: None,
       noise_fbo: None,
       texture_loc: -1,
-      text_texture_number
+      text_texture_number,
+      line_pos: 0.5
     }
+  }
+
+  pub fn update(&mut self) {
+    self.line_pos = self.line_pos - 0.001;
+    if self.line_pos < -0.5 { self.line_pos = 1.5; }
   }
 }
 
-impl Scene for NoiseScene {
+impl Scene for RetrofyScene {
   fn init(&mut self) {
     unsafe {
       // fbos
@@ -57,6 +68,8 @@ impl Scene for NoiseScene {
       // uniforms
       self.rand_uniform_loc = gl::GetUniformLocation(self.program.handle, CString::new("baseRand").unwrap().as_ptr());
       self.texture_loc = gl::GetUniformLocation(self.program.handle, CString::new("screenTexture").unwrap().as_ptr());
+      self.retro_color_loc = gl::GetUniformLocation(self.program.handle, CString::new("retroColor").unwrap().as_ptr());
+      self.line_pos_loc = gl::GetUniformLocation(self.program.handle, CString::new("linePos").unwrap().as_ptr());
       // quad
       let (vbo, vao) = make_frame_quad(self.program.handle);
       self.vbo = vbo;
@@ -76,6 +89,8 @@ impl Scene for NoiseScene {
     gl::UseProgram(self.program.handle);
     gl::BindTexture(gl::TEXTURE_2D, self.text_texture_handle); // if not bound, we get the upside down red letters
     gl::Uniform1i(self.texture_loc, self.text_texture_number); // this should be from the text_fbo
+    gl::Uniform1f(self.line_pos_loc, self.line_pos);
+    gl::Uniform4fv(self.retro_color_loc, 1, RETRO_COLOR.as_ptr());
     if let Some(pass) = &self.noise { pass.set(); }
     let mut rng = rand::thread_rng();
     let rand_val: f32 = rng.gen();

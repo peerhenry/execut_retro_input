@@ -1,12 +1,3 @@
-//! Example of glyph_brush usage with raw OpenGL.
-//!
-//! Uses instanced rendering with 1 vertex per glyph referencing a 1 byte per pixel texture.
-//!
-//! Controls
-//! * Scroll to size text.
-//! * Type to modify text.
-//! * Resize window.
-//! 
 //! Rendering to a texture https://learnopengl.com/Advanced-OpenGL/Framebuffers
 //! bloom https://learnopengl.com/Advanced-Lighting/Bloom
 
@@ -25,8 +16,8 @@ mod frame_buffer;
 use frame_buffer::*;
 mod scene;
 use scene::*;
-mod noise_scene;
-use noise_scene::*;
+mod retrofy_scene;
+use retrofy_scene::*;
 mod text_scene;
 use text_scene::*;
 mod event_handler;
@@ -34,6 +25,10 @@ use event_handler::*;
 mod context;
 use context::*;
 
+// pub const RETRO_COLOR: [f32; 4] = [164.0/255.0, 252.0/255.0, 212.0/255.0, 255.0]; // very light teal
+// pub const RETRO_COLOR: [f32; 4] = [144.0/255.0, 228.0/255.0, 192.0/255.0, 255.0];  // pretty light teal, and bland
+pub const RETRO_COLOR: [f32; 4] = [47.0/255.0, 218.0/255.0, 176.0/255.0, 255.0]; // a bit more colorful greenish
+// pub const RETRO_COLOR: [f32; 4] = [200.0/255.0, 22.0/255.0, 2.0/255.0, 255.0]; // reddish
 pub type Res<T> = Result<T, Box<std::error::Error>>;
 
 fn main() -> Res<()> {
@@ -47,8 +42,8 @@ fn main() -> Res<()> {
   let text_fbo_texture_number = text_frame_buffer.texture_number;
 
   // generating other framebuffers in noisescene somehow interferes with text_scene; it renders semi-transparant quads instead of glyphs
-  let mut noise_scene = NoiseScene::new(include_str!("shader/retrofy.vert.glsl"), include_str!("shader/retrofy.frag.glsl"), text_texture, text_fbo_texture_number);
-  noise_scene.init();
+  let mut retrofy_scene = RetrofyScene::new(include_str!("shader/retrofy.vert.glsl"), include_str!("shader/retrofy.frag.glsl"), text_texture, text_fbo_texture_number);
+  retrofy_scene.init();
 
   let mut text_scene = TextScene::new(include_str!("shader/text.vert.glsl"), include_str!("shader/text.frag.glsl"), &window, Some(text_frame_buffer));
   text_scene.init();
@@ -59,17 +54,18 @@ fn main() -> Res<()> {
   while running {
     loop_helper.loop_start();
     handle_events(&mut events, &mut running, &window, &mut text_scene)?;
+    retrofy_scene.update();
     text_scene.update(&window);
-    draw(&noise_scene, &text_scene, &window)?;
+    draw(&retrofy_scene, &text_scene, &window)?;
     update_loop_helper(&mut loop_helper, &window, title);
   }
   // CLEANUP
   text_scene.cleanup();
-  noise_scene.cleanup();
+  retrofy_scene.cleanup();
   Ok(())
 }
 
-fn draw(noise_scene: &NoiseScene, text_scene: &TextScene, window: &GlWindow) -> Res<()> {
+fn draw(noise_scene: &RetrofyScene, text_scene: &TextScene, window: &GlWindow) -> Res<()> {
   unsafe {
     text_scene.draw();
     noise_scene.draw();

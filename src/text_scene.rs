@@ -11,6 +11,7 @@ use crate::gl_buffers::*;
 use crate::gl_error_handler::*;
 use crate::helpers_for_glyph::*;
 use crate::frame_buffer::*;
+use crate::RETRO_COLOR;
 
 #[derive(Clone, Copy)]
 enum SpaceshipSetting {
@@ -236,7 +237,8 @@ impl TextScene<'_> {
       scale,
       screen_position: (width/20.0, height/20.0),
       bounds: (width, height),
-      color: [0.3, 0.9, 0.3, 1.0],
+      // color: [0.3, 0.9, 0.3, 1.0],
+      color: RETRO_COLOR,
       ..Section::default()
     });
 

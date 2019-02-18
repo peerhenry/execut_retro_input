@@ -24,6 +24,8 @@ mod event_handler;
 use event_handler::*;
 mod context;
 use context::*;
+mod nickname_generator;
+use nickname_generator::*;
 
 // SOME COLORS
 // [164.0/255.0, 252.0/255.0, 212.0/255.0, 255.0]; // very light teal
@@ -45,12 +47,24 @@ fn main() -> Res<()> {
   let text_frame_buffer = Framebuffer::new(gl::TEXTURE0, f_width, f_height);
   let text_texture = text_frame_buffer.tex_handle;
   let text_fbo_texture_number = text_frame_buffer.texture_number;
+  let nickname_generator = NicknameGenerator::new(include_str!("../assets/adjectives.txt"), include_str!("../assets/nouns.txt"));
 
   // generating other framebuffers in noisescene somehow interferes with text_scene; it renders semi-transparant quads instead of glyphs
-  let mut retrofy_scene = RetrofyScene::new(include_str!("shader/retrofy.vert.glsl"), include_str!("shader/retrofy.frag.glsl"), text_texture, text_fbo_texture_number);
+  let mut retrofy_scene = RetrofyScene::new(
+    include_str!("shader/retrofy.vert.glsl"), 
+    include_str!("shader/retrofy.frag.glsl"), 
+    text_texture, 
+    text_fbo_texture_number
+  );
   retrofy_scene.init();
 
-  let mut text_scene = TextScene::new(include_str!("shader/text.vert.glsl"), include_str!("shader/text.frag.glsl"), &window, Some(text_frame_buffer));
+  let mut text_scene = TextScene::new(
+    include_str!("shader/text.vert.glsl"), 
+    include_str!("shader/text.frag.glsl"), 
+    &window,
+    Some(text_frame_buffer),
+    nickname_generator
+  );
   text_scene.init();
 
   let mut loop_helper = spin_sleep::LoopHelper::builder().build_with_target_rate(250.0);

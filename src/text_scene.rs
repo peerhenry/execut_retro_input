@@ -13,6 +13,7 @@ use crate::helpers_for_glyph::*;
 use crate::frame_buffer::*;
 use crate::RETRO_COLOR_LEFT;
 use crate::RETRO_COLOR_RIGHT;
+use crate::nickname_generator::*;
 
 #[derive(Clone, Copy)]
 enum SpaceshipSetting {
@@ -65,11 +66,13 @@ pub struct TextScene<'a> {
   font_tex_loc: GLint,
   selected_input_array: [SelectedInput; 2],
   points_remaining_array: [u32; 2],
-  setting_points_array: [[SpaceshipSettingValue; 4]; 2]
+  setting_points_array: [[SpaceshipSettingValue; 4]; 2],
+  player_names: [String; 2],
+  nickname_generator: NicknameGenerator,
 }
 
 impl TextScene<'_> {
-  pub fn new(vs_glsl: &str, fs_glsl: &str, window: &glutin::GlWindow, frame_buffer: Option<Framebuffer>) -> Self {
+  pub fn new(vs_glsl: &str, fs_glsl: &str, window: &glutin::GlWindow, frame_buffer: Option<Framebuffer>, nickname_generator: NicknameGenerator) -> Self {
     let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
     let glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
     // let text: String = include_str!("text/lipsum.txt").into();
@@ -89,6 +92,9 @@ impl TextScene<'_> {
     ];
     let settings_right = settings.clone();
 
+    let left_player_name = nickname_generator.generate_nickname();
+    let right_player_name = nickname_generator.generate_nickname();
+
     TextScene {
       program,
       vbo: 0,
@@ -105,6 +111,8 @@ impl TextScene<'_> {
       selected_input_array: [SelectedInput::Setting(SpaceshipSetting::Shields), SelectedInput::Setting(SpaceshipSetting::Shields)],
       points_remaining_array: [10, 10],
       setting_points_array: [settings, settings_right],
+      nickname_generator,
+      player_names: [left_player_name, right_player_name]
       // ..Default::default() // doesnt work for arrays
     }
   }
@@ -112,7 +120,7 @@ impl TextScene<'_> {
   // todo: add resize function
 
   // to become obsolete
-  pub fn pop(&mut self) {
+  /* pub fn pop(&mut self) {
     self.text.pop();
   }
 
@@ -121,7 +129,7 @@ impl TextScene<'_> {
     if c != '\u{7f}' && c != '\u{8}' {
       self.text.push(c);
     }
-  }
+  }*/
 
   pub fn up(&mut self, player_index: usize) {
     let new_selected: SelectedInput;
@@ -162,7 +170,7 @@ impl TextScene<'_> {
   fn change_setting(&mut self, setting_index: usize, delta: i32, player_index: usize)
   {
     let new_val: i32 = self.setting_points_array[player_index][setting_index].value as i32 + delta;
-    let new_remaining = self.points_remaining_array[player_index] as i32- delta;
+    let new_remaining = self.points_remaining_array[player_index] as i32 - delta;
     if new_remaining >= 0 && new_remaining <= 10 && new_val >= 0 {
       self.setting_points_array[player_index][setting_index].value = new_val as u32;
       self.points_remaining_array[player_index] = new_remaining as u32;
@@ -180,15 +188,21 @@ impl TextScene<'_> {
         }
       },
       SelectedInput::Submit => {
+        if( self.points_remaining_array[player_index] > 0 ) {
+          // maybe show a message that all points must be distributed?
+          return;
+        }
         self.selected_input_array[player_index] = SelectedInput::Setting(SpaceshipSetting::Shields);
-        // todo:
         self.points_remaining_array[player_index] = 10;
         let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[0];
         setting_points[0].value = 0;
         setting_points[1].value = 0;
         setting_points[2].value = 0;
         setting_points[3].value = 0;
-        println!("TODO: SAVE SETTINGS");
+        println!("Saving settings for {}", self.player_names[player_index]); // DEBUG
+        self.player_names[player_index] = self.nickname_generator.generate_nickname();
+        // todo: send to printer
+        // todo: send to endpoint
       }
     }
   }
@@ -202,8 +216,9 @@ impl TextScene<'_> {
   }
 
   fn generate_string(&mut self, player_index: usize) -> String {
+    let name: &str = &self.player_names[player_index];
     let mut lines: Vec<String> = vec![
-      String::from("Welcome honorable guest."),
+      format!("Welcome {}.", name),
       String::from(""),
       String::from("Prepare for space invaders!"),
       String::from("Please input your spaceship settings..."),

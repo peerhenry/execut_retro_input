@@ -86,7 +86,7 @@ impl Scene for RetrofyScene {
       self.vbo = vbo;
       self.vao = vao;
       gl_assert_ok!();
-      // println!("vbo: {}, vao: {}, tex: {}, uniform: {}, fbo: {}, rbo: {}", self.vbo, self.vao, self.texture, self.rand_uniform_loc, self.fbo, self.rbo);
+      // println!("vbo: {}, vao: {}, tex: {}, uniform: {}, fbo: {}, rbo: {}", self.vbo, self.vao, self.texture, self.rand_uniform_loc, self.fbo, self.rbo); // DEBUG
     }
   }
 

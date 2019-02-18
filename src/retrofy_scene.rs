@@ -68,8 +68,8 @@ impl Scene for RetrofyScene {
       // uniforms
       self.rand_uniform_loc = gl::GetUniformLocation(self.program.handle, CString::new("baseRand").unwrap().as_ptr());
       self.texture_loc = gl::GetUniformLocation(self.program.handle, CString::new("screenTexture").unwrap().as_ptr());
-      self.retro_color_loc = gl::GetUniformLocation(self.program.handle, CString::new("retroColor").unwrap().as_ptr());
-      self.line_pos_loc = gl::GetUniformLocation(self.program.handle, CString::new("linePos").unwrap().as_ptr());
+      self.retro_color_loc = gl::GetUniformLocation(self.program.handle, CString::new("retroColorLeft").unwrap().as_ptr());
+      self.line_pos_loc = gl::GetUniformLocation(self.program.handle, CString::new("linePosLeft").unwrap().as_ptr());
       // quad
       let (vbo, vao) = make_frame_quad(self.program.handle);
       self.vbo = vbo;

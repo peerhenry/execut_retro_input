@@ -22,7 +22,11 @@ enum SpaceshipSetting {
   DodgeChance
 }
 
-#[derive(Clone, Copy)]
+impl Default for SpaceshipSetting {
+  fn default() -> Self { SpaceshipSetting::Shields }
+}
+
+#[derive(Clone, Copy, Default)]
 struct SpaceshipSettingValue {
   setting: SpaceshipSetting,
   value: u32
@@ -42,6 +46,10 @@ enum SelectedInput {
   Submit
 }
 
+impl Default for SelectedInput {
+  fn default() -> Self { SelectedInput::Setting(SpaceshipSetting::default()) }
+}
+
 pub struct TextScene<'a> {
   program: ShaderProgram,
   vbo: GLuint,
@@ -52,12 +60,12 @@ pub struct TextScene<'a> {
   pub font_size: f32,
   vertex_count: usize,
   vertex_max: usize,
-  pub dimensions: PhysicalSize,
+  pub dimensions: PhysicalSize, // cannot derive Default: "impl doesn't use types inside crate"
   frame_buffer: Option<Framebuffer>,
   font_tex_loc: GLint,
-  selected_input: SelectedInput,
-  points_remaining: u32,
-  setting_points: [SpaceshipSettingValue; 4]
+  selected_input_array: [SelectedInput; 2],
+  points_remaining_array: [u32; 2],
+  setting_points_array: [[SpaceshipSettingValue; 4]; 2]
 }
 
 impl TextScene<'_> {
@@ -79,6 +87,8 @@ impl TextScene<'_> {
       SpaceshipSettingValue::new(SpaceshipSetting::DefenseThickness),
       SpaceshipSettingValue::new(SpaceshipSetting::DodgeChance)
     ];
+    let settings_right = settings.clone();
+
     TextScene {
       program,
       vbo: 0,
@@ -86,17 +96,20 @@ impl TextScene<'_> {
       glyph_texture: 0,
       glyph_brush,
       text,
-      font_size: 36.0, // was 18.0 from example
+      font_size: 36.0, // was 18.0 in initial example
       vertex_count: 0,
       vertex_max: 0,
       dimensions,
       frame_buffer,
       font_tex_loc,
-      selected_input: SelectedInput::Setting(SpaceshipSetting::Shields),
-      points_remaining: 10,
-      setting_points: settings
+      selected_input_array: [SelectedInput::Setting(SpaceshipSetting::Shields), SelectedInput::Setting(SpaceshipSetting::Shields)],
+      points_remaining_array: [10, 10],
+      setting_points_array: [settings, settings_right],
+      // ..Default::default() // doesnt work for arrays
     }
   }
+
+  // todo: add resize function
 
   // to become obsolete
   pub fn pop(&mut self) {
@@ -112,7 +125,7 @@ impl TextScene<'_> {
 
   pub fn up(&mut self) {
     let new_selected: SelectedInput;
-    match self.selected_input {
+    match self.selected_input_array[0] {
       SelectedInput::Setting(setting) => {
         match setting {
           SpaceshipSetting::Shields => { new_selected = SelectedInput::Submit; },
@@ -125,12 +138,12 @@ impl TextScene<'_> {
         new_selected = SelectedInput::Setting(SpaceshipSetting::DodgeChance);
       }
     }
-    self.selected_input = new_selected;
+    self.selected_input_array[0] = new_selected;
   }
 
   pub fn down(&mut self) {
     let new_selected: SelectedInput;
-    match self.selected_input {
+    match self.selected_input_array[0] {
       SelectedInput::Setting(setting) => {
         match setting {
           SpaceshipSetting::Shields => { new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower); },
@@ -143,21 +156,21 @@ impl TextScene<'_> {
         new_selected = SelectedInput::Setting(SpaceshipSetting::Shields);
       }
     }
-    self.selected_input = new_selected;
+    self.selected_input_array[0] = new_selected;
   }
 
   fn change_setting(&mut self, index: usize, delta: i32)
   {
-    let new_val: i32 = self.setting_points[index].value as i32 + delta;
-    let new_remaining = self.points_remaining as i32- delta;
+    let new_val: i32 = self.setting_points_array[0][index].value as i32 + delta;
+    let new_remaining = self.points_remaining_array[0] as i32- delta;
     if new_remaining >= 0 && new_remaining <= 10 && new_val >= 0 {
-      self.setting_points[index].value = new_val as u32;
-      self.points_remaining = new_remaining as u32;
+      self.setting_points_array[0][index].value = new_val as u32;
+      self.points_remaining_array[0] = new_remaining as u32;
     }
   }
 
   fn change(&mut self, delta: i32) {
-    match self.selected_input {
+    match self.selected_input_array[0] {
       SelectedInput::Setting(setting) => {
         match setting {
           SpaceshipSetting::Shields => { self.change_setting(0, delta); },
@@ -167,13 +180,14 @@ impl TextScene<'_> {
         }
       },
       SelectedInput::Submit => {
-        self.selected_input = SelectedInput::Setting(SpaceshipSetting::Shields);
+        self.selected_input_array[0] = SelectedInput::Setting(SpaceshipSetting::Shields);
         // todo:
-        self.points_remaining = 10;
-        self.setting_points[0].value = 0;
-        self.setting_points[1].value = 0;
-        self.setting_points[2].value = 0;
-        self.setting_points[3].value = 0;
+        self.points_remaining_array[0] = 10;
+        let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[0];
+        setting_points[0].value = 0;
+        setting_points[1].value = 0;
+        setting_points[2].value = 0;
+        setting_points[3].value = 0;
         println!("TODO: SAVE SETTINGS");
       }
     }
@@ -194,10 +208,11 @@ impl TextScene<'_> {
       String::from("Prepare for space invaders!"),
       String::from("Please input your spaceship settings..."),
       String::from(""),
-      String::from(format!("Points remaining: {}", self.points_remaining)),
+      String::from(format!("Points remaining: {}", self.points_remaining_array[0])),
       String::from(""),
     ];
-    for (i, elem) in self.setting_points.iter_mut().enumerate() {
+    let setting_points = self.setting_points_array[0].clone();
+    for (i, elem) in setting_points.iter().enumerate() {
       let settingName: &str;
       let points: u32 = elem.value;
       match elem.setting {
@@ -211,7 +226,7 @@ impl TextScene<'_> {
     }
     lines.push(String::from(" "));
     lines.push(String::from("  SUBMIT"));
-    match self.selected_input {
+    match self.selected_input_array[0] {
       SelectedInput::Setting(setting) => {
         match setting {
           SpaceshipSetting::Shields => { lines[7] = lines[7].replace("  ", "> "); },

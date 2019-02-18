@@ -14,33 +14,8 @@ use crate::frame_buffer::*;
 use crate::RETRO_COLOR_LEFT;
 use crate::RETRO_COLOR_RIGHT;
 use crate::nickname_generator::*;
-
-#[derive(Clone, Copy)]
-enum SpaceshipSetting {
-  Shields,
-  Firepower,
-  DefenseThickness,
-  DodgeChance
-}
-
-impl Default for SpaceshipSetting {
-  fn default() -> Self { SpaceshipSetting::Shields }
-}
-
-#[derive(Clone, Copy, Default)]
-struct SpaceshipSettingValue {
-  setting: SpaceshipSetting,
-  value: u32
-}
-
-impl SpaceshipSettingValue {
-  fn new(setting: SpaceshipSetting) -> Self {
-    SpaceshipSettingValue {
-      setting,
-      value: 0
-    }
-  }
-}
+use crate::spaceship_settings::*;
+use crate::printer::*;
 
 enum SelectedInput {
   Setting(SpaceshipSetting),
@@ -69,10 +44,18 @@ pub struct TextScene<'a> {
   setting_points_array: [[SpaceshipSettingValue; 4]; 2],
   player_names: [String; 2],
   nickname_generator: NicknameGenerator,
+  // printer: Printer
 }
 
 impl TextScene<'_> {
-  pub fn new(vs_glsl: &str, fs_glsl: &str, window: &glutin::GlWindow, frame_buffer: Option<Framebuffer>, nickname_generator: NicknameGenerator) -> Self {
+  pub fn new(
+    vs_glsl: &str, 
+    fs_glsl: &str, 
+    window: &glutin::GlWindow, 
+    frame_buffer: Option<Framebuffer>, 
+    nickname_generator: NicknameGenerator,
+    // printer: Printer
+  ) -> Self {
     let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
     let glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
     // let text: String = include_str!("text/lipsum.txt").into();
@@ -112,7 +95,8 @@ impl TextScene<'_> {
       points_remaining_array: [10, 10],
       setting_points_array: [settings, settings_right],
       nickname_generator,
-      player_names: [left_player_name, right_player_name]
+      player_names: [left_player_name, right_player_name],
+      // printer
       // ..Default::default() // doesnt work for arrays
     }
   }
@@ -187,10 +171,17 @@ impl TextScene<'_> {
         setting_points[1].value = 0;
         setting_points[2].value = 0;
         setting_points[3].value = 0;
-        println!("Saving settings for {}", self.player_names[player_index]); // DEBUG
-        self.player_names[player_index] = self.nickname_generator.generate_nickname();
-        // todo: send to printer
+        let name_copy = self.player_names[player_index].clone();
+        let name: &str = &self.player_names[player_index];
+        println!("Saving settings for {}", name); // DEBUG
+        // send to printer
+        /*self.printer.print(PlayerSettings {
+          nickname: name_copy,
+          setting_values: self.setting_points_array[0].clone()
+        });*/
         // todo: send to endpoint
+        // create new nickname
+        self.player_names[player_index] = self.nickname_generator.generate_nickname();
       }
     }
   }

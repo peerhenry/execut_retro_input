@@ -1,6 +1,11 @@
 use std::fs::File;
-
 use escposify::img::Image;
+use crate::spaceship_settings::*;
+
+pub struct PlayerSettings {
+  pub nickname: String,
+  pub setting_values: [SpaceshipSettingValue; 4]
+}
 
 pub struct Printer {
   logo: Image,
@@ -9,17 +14,16 @@ pub struct Printer {
 }
 
 impl Printer {
-  pub fn new() -> Printer {
-    let printer_file = escposify::device::File::<File>::new("\\\\ADOLFO\\BONNETJES");
-
+  pub fn new(printer_address: &str) -> Printer { // "\\\\ADOLFO\\BONNETJES"
+    let printer_file = escposify::device::File::<File>::new(printer_address);
     Printer {
-      logo: Image::new("infi.bmp"),
-      space_invader: Image::new("space-invader.bmp"),
+      logo: Image::new("assets/infi.bmp"),
+      space_invader: Image::new("assets/space-invader.bmp"),
       printer: escposify::printer::Printer::new(printer_file, None, None),
     }
   }
 
-  pub fn print(&mut self) {
+  pub fn print(&mut self, player_settings: PlayerSettings) {
     self.printer
     .font("C")
     .align("lt") // LT, CT, RT
@@ -31,13 +35,17 @@ impl Printer {
     .text("|          SPACE INVADERS        |")
     .text("----------------------------------")
     .text("")
-    .text("Nickname: Angry Darth Vader")
+    .text(&format!("Nickname: {}", player_settings.nickname))
     .text("")
     .text("Stats:")
-    .text("* Rate of fire: 5 bullets per second")
-    .text("* Shield strength: 10 hits")
-    .text("* Defense thickness: 10 pixels")
-    .text("* Dodging chance: 20%")
+    /*.text(format!("* Rate of fire: {} bullets per second")) // todo: convert points to values
+    .text(format!("* Shield strength: {} hits"))
+    .text(format!("* Defense thickness: {} pixels"))
+    .text(format!("* Dodging chance: {}%", ))*/
+    .text(&format!("* Rate of fire: {}", player_settings.setting_values[0].value.to_string()))
+    .text(&format!("* Shield strength: {}", player_settings.setting_values[1].value.to_string()))
+    .text(&format!("* Defense thickness: {}", player_settings.setting_values[2].value.to_string()))
+    .text(&format!("* Dodging chance: {}", player_settings.setting_values[3].value.to_string()))
     .text("")
     .text("Good luck!")
     .bit_image(&self.space_invader, None)

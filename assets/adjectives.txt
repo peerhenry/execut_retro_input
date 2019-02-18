@@ -1,3 +1,4 @@
+angry
 amazing
 astute
 badly behaved
@@ -12,6 +13,7 @@ exceptional
 fabulous
 funny
 good
+happy
 honorable
 incredible
 insightful
@@ -31,6 +33,7 @@ puzzling
 rational
 renowned
 reputable
+singular
 smart
 spooky
 strange

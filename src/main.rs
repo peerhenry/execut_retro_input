@@ -25,8 +25,10 @@ use event_handler::*;
 mod context;
 use context::*;
 mod printer;
+use printer::*;
 mod nickname_generator;
 use nickname_generator::*;
+mod spaceship_settings;
 
 // SOME COLORS
 // [164.0/255.0, 252.0/255.0, 212.0/255.0, 255.0]; // very light teal
@@ -59,12 +61,14 @@ fn main() -> Res<()> {
   );
   retrofy_scene.init();
 
+  // let printer = Printer::new("\\\\ADOLFO\\BONNETJES"); // todo: use system agnostic address
   let mut text_scene = TextScene::new(
     include_str!("shader/text.vert.glsl"), 
     include_str!("shader/text.frag.glsl"), 
     &window,
     Some(text_frame_buffer),
-    nickname_generator
+    nickname_generator,
+    // printer
   );
   text_scene.init();
 

@@ -24,6 +24,7 @@ mod event_handler;
 use event_handler::*;
 mod context;
 use context::*;
+mod printer;
 
 // SOME COLORS
 // [164.0/255.0, 252.0/255.0, 212.0/255.0, 255.0]; // very light teal

@@ -56,7 +56,6 @@ vec4 getScreenThingy()
 {
   vec2 transformedCoords = (2*TexCoords - vec2(1));
   float transformed_xy = abs(transformedCoords.x*transformedCoords.y);
-  // float factor = pow(1.1, transformed_xy);
   float factor = 1.05*(1+0.1*pow(transformed_xy, 2));
   vec2 curved_screen_coords = factor*transformedCoords;
   vec2 curved_screen_uv = 0.5*(curved_screen_coords + vec2(1));

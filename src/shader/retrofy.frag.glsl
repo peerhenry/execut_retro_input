@@ -7,7 +7,7 @@ uniform float baseRand;
 uniform sampler2D screenTexture;
 uniform vec4 retroColorLeft;
 uniform float linePosLeft;
-float lineDelta = 0.002;
+float lineThickness = 0.002;
 
 uniform vec4 retroColorRight;
 uniform float linePosRight;
@@ -26,10 +26,10 @@ vec4 getRetroColoring(float linePos, vec4 retroColor)
   float u = TexCoords.x;
   float v = TexCoords.y;
   float amplitude = u*v*0.05 + 0.05;
-  float lineDiff = abs(linePos - v);
+  float distanceFromLine = abs(linePos - v);
   float lineAmp = 0.0;
-  if(lineDiff < lineDelta) lineAmp = (lineDelta - lineDiff)/lineDelta;
-  float darkLightDelta = 0.05;
+  if(distanceFromLine < lineThickness) lineAmp = (lineThickness - distanceFromLine)/lineThickness;
+  float darkLightDelta = 0.08;
   float dark = (darkLightDelta/2)*(3-linePos);
   amplitude += dark;
   if(v < linePos) amplitude += darkLightDelta;

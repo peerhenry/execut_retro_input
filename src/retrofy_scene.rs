@@ -18,16 +18,20 @@ pub struct RetrofyScene {
   text_texture_handle: GLuint,
   rand_uniform_loc: GLint,
   texture_loc: GLint,
-  retro_color_loc: GLint,
-  line_pos_loc: GLint,
-  retro_color: [f32; 4],
+  retro_color_left_loc: GLint,
+  retro_color_right_loc: GLint,
+  line_pos_left_loc: GLint,
+  line_pos_right_loc: GLint,
+  line_pos_left: GLfloat,
+  line_pos_right: GLfloat,
+  retro_color_left: [f32; 4],
+  retro_color_right: [f32; 4],
   noise: Option<RenderPass>,
   extract_bright: Option<RenderPass>,
   blur_vertically: Option<RenderPass>,
   blur_horizontally_and_join: Option<RenderPass>,
   noise_fbo: Option<Framebuffer>,
   text_texture_number: GLint,
-  line_pos: GLfloat
 }
 
 impl RetrofyScene {
@@ -35,28 +39,26 @@ impl RetrofyScene {
     let program = build_shader_program(vs_glsl, fs_glsl).unwrap();
     RetrofyScene {
       program: program,
-      // vbo: 0,
-      // vao: 0,
       text_texture_handle,
-      // rand_uniform_loc: -1,
-      // retro_color_loc: -1,
-      // line_pos_loc: -1,
-      // noise: None,
-      // extract_bright: None,
-      // blur_vertically: None,
-      // blur_horizontally_and_join: None,
-      // noise_fbo: None,
-      // texture_loc: -1,
+      rand_uniform_loc: -1,
+      retro_color_loc: -1,
+      line_pos_loc: -1,
+      texture_loc: -1,
       text_texture_number,
-      line_pos: 0.5,
-      retro_color: RETRO_COLOR_LEFT,
+      line_pos_left: 0.6,
+      line_pos_right: 0.2,
+      retro_color_left: RETRO_COLOR_LEFT,
+      retro_color_right: RETRO_COLOR_RIGHT,
       ..Default::default()
     }
   }
 
   pub fn update(&mut self) {
-    self.line_pos = self.line_pos - 0.001;
-    if self.line_pos < -0.5 { self.line_pos = 1.5; }
+    self.line_pos_left = self.line_pos_left - 0.001;
+    if self.line_pos_left < -0.5 { self.line_pos_left = 1.5; }
+
+    self.line_pos_right = self.line_pos_right - 0.001;
+    if self.line_pos_right < -0.5 { self.line_pos_right = 1.5; }
   }
 }
 
@@ -73,8 +75,10 @@ impl Scene for RetrofyScene {
       // uniforms
       self.rand_uniform_loc = gl::GetUniformLocation(self.program.handle, CString::new("baseRand").unwrap().as_ptr());
       self.texture_loc = gl::GetUniformLocation(self.program.handle, CString::new("screenTexture").unwrap().as_ptr());
-      self.retro_color_loc = gl::GetUniformLocation(self.program.handle, CString::new("retroColorLeft").unwrap().as_ptr());
-      self.line_pos_loc = gl::GetUniformLocation(self.program.handle, CString::new("linePosLeft").unwrap().as_ptr());
+      self.retro_color_left_loc = gl::GetUniformLocation(self.program.handle, CString::new("retroColorLeft").unwrap().as_ptr());
+      self.retro_color_right_loc = gl::GetUniformLocation(self.program.handle, CString::new("retroColorRight").unwrap().as_ptr());
+      self.line_pos_left_loc = gl::GetUniformLocation(self.program.handle, CString::new("linePosLeft").unwrap().as_ptr());
+      self.line_pos_right_loc = gl::GetUniformLocation(self.program.handle, CString::new("linePosRight").unwrap().as_ptr());
       // quad
       let (vbo, vao) = make_frame_quad(self.program.handle);
       self.vbo = vbo;
@@ -94,8 +98,10 @@ impl Scene for RetrofyScene {
     gl::UseProgram(self.program.handle);
     gl::BindTexture(gl::TEXTURE_2D, self.text_texture_handle); // if not bound, we get the upside down red letters
     gl::Uniform1i(self.texture_loc, self.text_texture_number); // this should be from the text_fbo
-    gl::Uniform1f(self.line_pos_loc, self.line_pos);
-    gl::Uniform4fv(self.retro_color_loc, 1, self.retro_color.as_ptr());
+    gl::Uniform1f(self.line_pos_left_loc, self.line_pos_left);
+    gl::Uniform1f(self.line_pos_right_loc, self.line_pos_right);
+    gl::Uniform4fv(self.retro_color_left_loc, 1, self.retro_color_left.as_ptr());
+    gl::Uniform4fv(self.retro_color_right_loc, 1, self.retro_color_right.as_ptr());
     if let Some(pass) = &self.noise { pass.set(); }
     let mut rng = rand::thread_rng();
     let rand_val: f32 = rng.gen();

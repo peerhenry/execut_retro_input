@@ -29,7 +29,7 @@ vec4 getRetroColoring(float linePos, vec4 retroColor)
   float distanceFromLine = abs(linePos - v);
   float lineAmp = 0.0;
   if(distanceFromLine < lineThickness) lineAmp = (lineThickness - distanceFromLine)/lineThickness;
-  float darkLightDelta = 0.08;
+  float darkLightDelta = 0.18;
   float dark = (darkLightDelta/2)*(3-linePos);
   amplitude += dark;
   if(v < linePos) amplitude += darkLightDelta;

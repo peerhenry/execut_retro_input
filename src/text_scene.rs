@@ -102,7 +102,7 @@ impl TextScene<'_> {
       glyph_texture: 0,
       glyph_brush,
       text,
-      font_size: 36.0, // was 18.0 in initial example
+      font_size: 28.0, // was 18.0 in initial example
       vertex_count: 0,
       vertex_max: 0,
       dimensions,
@@ -118,18 +118,6 @@ impl TextScene<'_> {
   }
 
   // todo: add resize function
-
-  // to become obsolete
-  /* pub fn pop(&mut self) {
-    self.text.pop();
-  }
-
-  // to become obsolete
-  pub fn push(&mut self, c: char) {
-    if c != '\u{7f}' && c != '\u{8}' {
-      self.text.push(c);
-    }
-  }*/
 
   pub fn up(&mut self, player_index: usize) {
     let new_selected: SelectedInput;

@@ -59,7 +59,7 @@ impl RetrofyScene {
     self.line_pos_left = self.line_pos_left - 0.001;
     if self.line_pos_left < -0.5 { self.line_pos_left = 1.5; }
 
-    self.line_pos_right = self.line_pos_right - 0.001;
+    self.line_pos_right = self.line_pos_right - 0.0011;
     if self.line_pos_right < -0.5 { self.line_pos_right = 1.5; }
   }
 }

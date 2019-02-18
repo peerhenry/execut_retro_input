@@ -17,6 +17,7 @@ full_rusttype = { version = "0.7.4", features = ["gpu_cache"], package = "rustty
 seahash = "3"
 hashbrown = "0.1"
 rand = "0.6.5"
+escposify = "0.1.4"
 
 [dev-dependencies]
 lazy_static = "1"

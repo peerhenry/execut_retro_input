@@ -24,6 +24,7 @@ mod event_handler;
 use event_handler::*;
 mod context;
 use context::*;
+mod printer;
 mod nickname_generator;
 use nickname_generator::*;
 

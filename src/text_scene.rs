@@ -123,9 +123,9 @@ impl TextScene<'_> {
     }
   }
 
-  pub fn up(&mut self, index: usize) {
+  pub fn up(&mut self, player_index: usize) {
     let new_selected: SelectedInput;
-    match self.selected_input_array[0] {
+    match self.selected_input_array[player_index] {
       SelectedInput::Setting(setting) => {
         match setting {
           SpaceshipSetting::Shields => { new_selected = SelectedInput::Submit; },
@@ -138,12 +138,12 @@ impl TextScene<'_> {
         new_selected = SelectedInput::Setting(SpaceshipSetting::DodgeChance);
       }
     }
-    self.selected_input_array[index] = new_selected;
+    self.selected_input_array[player_index] = new_selected;
   }
 
-  pub fn down(&mut self, index: usize) {
+  pub fn down(&mut self, player_index: usize) {
     let new_selected: SelectedInput;
-    match self.selected_input_array[0] {
+    match self.selected_input_array[player_index] {
       SelectedInput::Setting(setting) => {
         match setting {
           SpaceshipSetting::Shields => { new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower); },
@@ -156,7 +156,7 @@ impl TextScene<'_> {
         new_selected = SelectedInput::Setting(SpaceshipSetting::Shields);
       }
     }
-    self.selected_input_array[index] = new_selected;
+    self.selected_input_array[player_index] = new_selected;
   }
 
   fn change_setting(&mut self, setting_index: usize, delta: i32, player_index: usize)

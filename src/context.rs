@@ -1,6 +1,6 @@
 use std::env;
-// use gl::types::*;
-use glutin::{EventsLoop, Api, GlContext, GlProfile, GlRequest, GlWindow};
+use gl::types::*;
+use glutin::{EventsLoop, Api, GlContext, GlProfile, GlRequest, GlWindow, MonitorId};
 use super::Res;
 
 pub fn init_context(title: &str) -> Res<(GlWindow, EventsLoop)> {
@@ -16,9 +16,12 @@ pub fn init_context(title: &str) -> Res<(GlWindow, EventsLoop)> {
       }
   }
   let events = glutin::EventsLoop::new();
+  let monitorId: MonitorId = events.get_available_monitors().nth(0).expect("Please enter a valid ID");
   let window = glutin::GlWindow::new(
       glutin::WindowBuilder::new()
-          .with_dimensions((1600, 900).into())
+          // .with_dimensions((1600, 900).into())
+          .with_dimensions((1920, 1080).into())
+          .with_fullscreen(Some(monitorId))
           .with_title(title),
       glutin::ContextBuilder::new()
           .with_gl_profile(GlProfile::Core)
@@ -28,6 +31,7 @@ pub fn init_context(title: &str) -> Res<(GlWindow, EventsLoop)> {
   )?;
   unsafe { window.make_current()? };
   // Load the OpenGL function pointers
+  // unsafe { gl::Enable(gl::MULTISAMPLE); }
   gl::load_with(|symbol| window.get_proc_address(symbol) as _);
   Ok((window, events))
 }

@@ -56,7 +56,8 @@ impl TextScene<'_> {
     nickname_generator: NicknameGenerator,
     // printer: Printer
   ) -> Self {
-    let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
+    // let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
+    let font_bytes: &[u8] = include_bytes!("../fonts/space_invaders.ttf");
     let glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
     // let text: String = include_str!("text/lipsum.txt").into();
     let text: String = include_str!("text/input.txt").into();
@@ -85,7 +86,7 @@ impl TextScene<'_> {
       glyph_texture: 0,
       glyph_brush,
       text,
-      font_size: 28.0, // was 18.0 in initial example
+      font_size: 38.0, // was 18.0 in initial example
       vertex_count: 0,
       vertex_max: 0,
       dimensions,
@@ -101,7 +102,10 @@ impl TextScene<'_> {
     }
   }
 
-  // todo: add resize function
+  pub fn resize(&mut self, dimensions: PhysicalSize) {
+    self.dimensions = dimensions;
+    // todo: set glyph positions
+  }
 
   pub fn up(&mut self, player_index: usize) {
     let new_selected: SelectedInput;
@@ -241,12 +245,13 @@ impl TextScene<'_> {
     let width = self.dimensions.width as f32; // use this if you render to viewport
     let height = self.dimensions.height as _;
     let scale = Scale::uniform((self.font_size * window.get_hidpi_factor() as f32).round());
+    // let scale = rusttype::Scale::uniform(10.0); 
     let input_string = self.generate_string(0);
     self.glyph_brush.queue(Section {
       text: &input_string,
       scale,
-      screen_position: (width/20.0, height/20.0),
-      bounds: (width/2.0, height),
+      screen_position: (width/20.0, height/10.0),
+      bounds: (width/2.1, height),
       color: RETRO_COLOR_LEFT,
       ..Section::default()
     });
@@ -255,8 +260,8 @@ impl TextScene<'_> {
     self.glyph_brush.queue(Section {
       text: &input_string_right,
       scale,
-      screen_position: (width - width/20.0, height/20.0),
-      bounds: (width/2.0, height),
+      screen_position: (width - width/20.0, height/10.0),
+      bounds: (width/2.1, height),
       color: RETRO_COLOR_RIGHT,
       layout: Layout::default()
         .h_align(HorizontalAlign::Right),
@@ -408,14 +413,14 @@ impl Scene for TextScene<'_> {
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE as _);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as _);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as _);
-        let (width, height) = self.glyph_brush.texture_dimensions();
-        println!("glyph_brush w, h: {}, {}", width, height);
+        let (glyph_width, glyph_height) = self.glyph_brush.texture_dimensions();
+        println!("glyph_brush w, h: {}, {}", glyph_width, glyph_height);
         gl::TexImage2D(
             gl::TEXTURE_2D,
             0,
             gl::RED as _,
-            width as _,
-            height as _,
+            glyph_width as _,
+            glyph_height as _,
             0,
             gl::RED,
             gl::UNSIGNED_BYTE,

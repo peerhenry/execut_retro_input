@@ -14,7 +14,7 @@ pub fn handle_events(events: &mut EventsLoop, running: &mut bool, window: &GlWin
           window.resize(size.to_physical(dpi));
           if let Some(ls) = window.get_inner_size() {
             let dimensions = ls.to_physical(dpi);
-            text_scene.dimensions = dimensions;
+            text_scene.resize(dimensions);
             unsafe {
               gl::Viewport(0, 0, dimensions.width as _, dimensions.height as _);
             }

@@ -45,8 +45,8 @@ fn main() -> Res<()> {
   let title = "glyph_brush opengl example - scroll to size, type to modify";
   let (window, mut events) = init_context(title)?;
   // INIT
-  let f_width: GLsizei = 1600; // 1920;
-  let f_height: GLsizei = 900; // 1080;
+  let f_width: GLsizei = 1920; // 1920;
+  let f_height: GLsizei = 1080; // 1080;
   let text_frame_buffer = Framebuffer::new(gl::TEXTURE0, f_width, f_height);
   let text_texture = text_frame_buffer.tex_handle;
   let text_fbo_texture_number = text_frame_buffer.texture_number;

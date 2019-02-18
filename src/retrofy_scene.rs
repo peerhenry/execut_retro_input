@@ -59,7 +59,7 @@ impl RetrofyScene {
     self.line_pos_left = self.line_pos_left - 0.001;
     if self.line_pos_left < -0.5 { self.line_pos_left = 1.5; }
 
-    self.line_pos_right = self.line_pos_right - 0.001;
+    self.line_pos_right = self.line_pos_right - 0.0011;
     if self.line_pos_right < -0.5 { self.line_pos_right = 1.5; }
   }
 }
@@ -86,7 +86,7 @@ impl Scene for RetrofyScene {
       self.vbo = vbo;
       self.vao = vao;
       gl_assert_ok!();
-      // println!("vbo: {}, vao: {}, tex: {}, uniform: {}, fbo: {}, rbo: {}", self.vbo, self.vao, self.texture, self.rand_uniform_loc, self.fbo, self.rbo);
+      // println!("vbo: {}, vao: {}, tex: {}, uniform: {}, fbo: {}, rbo: {}", self.vbo, self.vao, self.texture, self.rand_uniform_loc, self.fbo, self.rbo); // DEBUG
     }
   }
 

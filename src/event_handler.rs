@@ -47,75 +47,77 @@ pub fn handle_events(events: &mut EventsLoop, running: &mut bool, window: &GlWin
           VirtualKeyCode::Left => {
             text_scene.decrease(0);
           },
-          VirtualKeyCode::p => { // row 1, left button
+          VirtualKeyCode::P => { // row 1, left button
             text_scene.increase(0);
           },
-          VirtualKeyCode::Enter => { // row 1, right button
+          VirtualKeyCode::Return => { // row 1, right button (Return is the enter key)
             text_scene.increase(0);
           },
-          VirtualKeyCode::Shift => { // row 2, left button
+          VirtualKeyCode::LShift => { // row 2, left button => is it left shift?
             text_scene.increase(0);
           },
-          VirtualKeyCode::z => { // row 2, middle button
+          VirtualKeyCode::RShift => { // row 2, left button => or right shift?
             text_scene.increase(0);
           },
-          VirtualKeyCode::x => { // row 2, right button
+          VirtualKeyCode::Z => { // row 2, middle button
             text_scene.increase(0);
           },
-          VirtualKeyCode::Ctrl => { // row 3, left button
+          VirtualKeyCode::X => { // row 2, right button
             text_scene.increase(0);
           },
-          VirtualKeyCode::Alt => { // row 3, middle button
+          VirtualKeyCode::LControl => { // row 3, left button
+            text_scene.increase(0);
+          },
+          VirtualKeyCode::LAlt => { // row 3, middle button
             text_scene.increase(0);
           },
           VirtualKeyCode::Space => { // row 3, right button
             text_scene.increase(0);
           },
-          /* VirtualKeyCode::5 => { // row 4, has only one button
+          VirtualKeyCode::Key5 => { // row 4, has only one button
             text_scene.increase(0);
-          },*/
+          },
 
           // handle player 2 input (player index 1)
-          VirtualKeyCode::r => { // p1 down
+          VirtualKeyCode::R => { // p2 up
             text_scene.up(1);
           },
-          VirtualKeyCode::f => { // p2 down
+          VirtualKeyCode::F => { // p2 down
             text_scene.down(1);
           },
-          VirtualKeyCode::g => { // p2 right
+          VirtualKeyCode::G => { // p2 right
             text_scene.increase(1);
           },
-          VirtualKeyCode::d => { // p2 left
+          VirtualKeyCode::D => { // p2 left
             text_scene.decrease(1);
           },
-          VirtualKeyCode::1 => { // row 1, left button
+          VirtualKeyCode::Key1 => { // row 1, left button
             text_scene.increase(1);
           },
-          VirtualKeyCode::2 => { // row 1, right button
+          VirtualKeyCode::Key2 => { // row 1, right button
             text_scene.increase(1);
           },
-          VirtualKeyCode::i => { // row 2, left button
+          VirtualKeyCode::I => { // row 2, left button
             text_scene.increase(1);
           },
-          VirtualKeyCode::j => { // row 2, middle button
+          VirtualKeyCode::J => { // row 2, middle button
             text_scene.increase(1);
           },
-          VirtualKeyCode::k => { // row 2, right button
+          VirtualKeyCode::K => { // row 2, right button
             text_scene.increase(1);
           },
-          VirtualKeyCode::s => { // row 3, left button
+          VirtualKeyCode::S => { // row 3, left button
             text_scene.increase(1);
           },
-          VirtualKeyCode::q => { // row 3, middle button
+          VirtualKeyCode::Q => { // row 3, middle button
             text_scene.increase(1);
           },
-          VirtualKeyCode::w => { // row 3, right button
+          VirtualKeyCode::W => { // row 3, right button
             text_scene.increase(1);
           },
-          VirtualKeyCode::a => { // row 4, just one button
+          VirtualKeyCode::A => { // row 4, just one button
             text_scene.increase(1);
           },
-
 
           _ => (),
         },

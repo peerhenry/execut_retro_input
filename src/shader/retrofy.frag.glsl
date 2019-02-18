@@ -21,10 +21,10 @@ float rand(vec2 co)
   return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * baseRand);
 }
 
-vec4 getRetroColoring(float linePos, vec4 retroColor)
+vec4 getRetroColoring(vec2 texCoords, float linePos, vec4 retroColor)
 {
-  float u = TexCoords.x;
-  float v = TexCoords.y;
+  float u = texCoords.x;
+  float v = texCoords.y;
   float amplitude = u*v*0.05 + 0.05;
   float distanceFromLine = abs(linePos - v);
   float lineAmp = 0.0;
@@ -36,29 +36,44 @@ vec4 getRetroColoring(float linePos, vec4 retroColor)
   return (amplitude + lineAmp)*retroColor;
 }
 
-vec4 getLeftSideFragment()
+vec4 getLeftSideFragment(vec2 texCoords)
 {
-  return getRetroColoring(linePosLeft, retroColorLeft);
+  return getRetroColoring(texCoords, linePosLeft, retroColorLeft);
 }
 
-vec4 getRightSideFragment()
+vec4 getRightSideFragment(vec2 texCoords)
 {
-  return getRetroColoring(linePosRight, retroColorRight);
+  return getRetroColoring(texCoords, linePosRight, retroColorRight);
 }
 
-vec4 getColoring()
+vec4 getColoring(vec2 texCoords)
 {
-  if(TexCoords.x < 0.5) return getLeftSideFragment();
-  else return getRightSideFragment();
+  if(texCoords.x < 0.5) return getLeftSideFragment(texCoords);
+  else return getRightSideFragment(texCoords);
+}
+
+vec4 getScreenThingy()
+{
+  vec2 transformedCoords = (2*TexCoords - vec2(1));
+  float transformed_xy = abs(transformedCoords.x*transformedCoords.y);
+  // float factor = pow(1.1, transformed_xy);
+  float factor = 1.05*(1+0.1*pow(transformed_xy, 2));
+  vec2 curved_screen_coords = factor*transformedCoords;
+  vec2 curved_screen_uv = 0.5*(curved_screen_coords + vec2(1));
+  if(curved_screen_uv.x > 0.0 && curved_screen_uv.y > 0.0 && curved_screen_uv.x < 1.0 && curved_screen_uv.y < 1.0) {
+    float r =rand(curved_screen_uv); // rand(TexCoords);
+    vec4 noise = vec4(vec3(0.05*r), 1);
+    vec4 coloring = getColoring(curved_screen_uv); // getColoring(TexCoords);
+    return texture(screenTexture, curved_screen_uv) + noise + coloring;
+  }
+  return vec4(0,0,0,1.0);
 }
 
 subroutine (RenderPassType)
 vec4 noise()
 {
-  float r = rand(TexCoords);
-  vec4 noise = vec4(vec3(0.05*r), 1);
-  vec4 coloring = getColoring();
-  return texture(screenTexture, TexCoords) + noise + coloring;
+  vec4 texCol = getScreenThingy();
+  return texCol;
 }
 
 subroutine (RenderPassType)

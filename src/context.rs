@@ -16,12 +16,13 @@ pub fn init_context(title: &str) -> Res<(GlWindow, EventsLoop)> {
       }
   }
   let events = glutin::EventsLoop::new();
-  let monitorId: MonitorId = events.get_available_monitors().nth(0).expect("Please enter a valid ID");
+  // for fullscreen example, check out: https://github.com/tomaka/glutin/blob/master/examples/fullscreen.rs
+  let monitor_id: MonitorId = events.get_available_monitors().nth(0).expect("Please enter a valid ID");
   let window = glutin::GlWindow::new(
       glutin::WindowBuilder::new()
           // .with_dimensions((1600, 900).into())
           .with_dimensions((1920, 1080).into())
-          .with_fullscreen(Some(monitorId))
+          .with_fullscreen(Some(monitor_id))
           .with_title(title),
       glutin::ContextBuilder::new()
           .with_gl_profile(GlProfile::Core)

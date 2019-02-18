@@ -25,10 +25,15 @@ use event_handler::*;
 mod context;
 use context::*;
 
-// pub const RETRO_COLOR: [f32; 4] = [164.0/255.0, 252.0/255.0, 212.0/255.0, 255.0]; // very light teal
-// pub const RETRO_COLOR: [f32; 4] = [144.0/255.0, 228.0/255.0, 192.0/255.0, 255.0];  // pretty light teal, and bland
-pub const RETRO_COLOR: [f32; 4] = [47.0/255.0, 218.0/255.0, 176.0/255.0, 255.0]; // a bit more colorful greenish
-// pub const RETRO_COLOR: [f32; 4] = [200.0/255.0, 22.0/255.0, 2.0/255.0, 255.0]; // reddish
+// SOME COLORS
+// [164.0/255.0, 252.0/255.0, 212.0/255.0, 255.0]; // very light teal
+// [144.0/255.0, 228.0/255.0, 192.0/255.0, 255.0];  // pretty light teal, and bland
+// [200.0/255.0, 22.0/255.0, 2.0/255.0, 255.0]; // reddish
+// [47.0/255.0, 218.0/255.0, 176.0/255.0, 255.0]; // a bit more colorful greenish
+
+pub const RETRO_COLOR_LEFT: [f32; 4] = [47.0/255.0, 218.0/255.0, 176.0/255.0, 255.0]; // a bit more colorful greenish
+pub const RETRO_COLOR_RIGHT: [f32; 4] = [200.0/255.0, 22.0/255.0, 2.0/255.0, 255.0]; // reddish
+
 pub type Res<T> = Result<T, Box<std::error::Error>>;
 
 fn main() -> Res<()> {

@@ -11,7 +11,8 @@ use crate::gl_buffers::*;
 use crate::gl_error_handler::*;
 use crate::helpers_for_glyph::*;
 use crate::frame_buffer::*;
-use crate::RETRO_COLOR;
+use crate::RETRO_COLOR_LEFT;
+use crate::RETRO_COLOR_RIGHT;
 
 #[derive(Clone, Copy)]
 enum SpaceshipSetting {
@@ -236,9 +237,21 @@ impl TextScene<'_> {
       text: &input_string,
       scale,
       screen_position: (width/20.0, height/20.0),
-      bounds: (width, height),
-      // color: [0.3, 0.9, 0.3, 1.0],
-      color: RETRO_COLOR,
+      bounds: (width/2.0, height),
+      color: RETRO_COLOR_LEFT,
+      ..Section::default()
+    });
+
+    let input_string_right = self.generate_string();
+    self.glyph_brush.queue(Section {
+      text: &input_string,
+      scale,
+      screen_position: (width - width/20.0, height/20.0),
+      bounds: (width/2.0, height),
+      color: RETRO_COLOR_RIGHT,
+      layout: Layout::default()
+        .h_align(HorizontalAlign::Right),
+        //.v_align(VerticalAlign::Bottom),
       ..Section::default()
     });
 

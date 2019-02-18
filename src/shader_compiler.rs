@@ -5,6 +5,7 @@ use std::{
 use gl::types::*;
 use super::Res;
 
+#[derive(Default)]
 pub struct ShaderProgram {
   pub vertex_shader: GLuint,
   pub fragment_shader: GLuint,

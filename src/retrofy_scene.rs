@@ -7,8 +7,10 @@ use crate::gl_buffers::*;
 use crate::gl_error_handler::*;
 use crate::render_pass::*;
 use crate::frame_buffer::*;
-use crate::RETRO_COLOR;
+use crate::RETRO_COLOR_LEFT;
+use crate::RETRO_COLOR_RIGHT;
 
+#[derive(Default)]
 pub struct RetrofyScene {
   program: ShaderProgram,
   vbo: GLuint,
@@ -18,6 +20,7 @@ pub struct RetrofyScene {
   texture_loc: GLint,
   retro_color_loc: GLint,
   line_pos_loc: GLint,
+  retro_color: [f32; 4],
   noise: Option<RenderPass>,
   extract_bright: Option<RenderPass>,
   blur_vertically: Option<RenderPass>,
@@ -32,20 +35,22 @@ impl RetrofyScene {
     let program = build_shader_program(vs_glsl, fs_glsl).unwrap();
     RetrofyScene {
       program: program,
-      vbo: 0,
-      vao: 0,
+      // vbo: 0,
+      // vao: 0,
       text_texture_handle,
-      rand_uniform_loc: -1,
-      retro_color_loc: -1,
-      line_pos_loc: -1,
-      noise: None,
-      extract_bright: None,
-      blur_vertically: None,
-      blur_horizontally_and_join: None,
-      noise_fbo: None,
-      texture_loc: -1,
+      // rand_uniform_loc: -1,
+      // retro_color_loc: -1,
+      // line_pos_loc: -1,
+      // noise: None,
+      // extract_bright: None,
+      // blur_vertically: None,
+      // blur_horizontally_and_join: None,
+      // noise_fbo: None,
+      // texture_loc: -1,
       text_texture_number,
-      line_pos: 0.5
+      line_pos: 0.5,
+      retro_color: RETRO_COLOR_LEFT,
+      ..Default::default()
     }
   }
 
@@ -90,7 +95,7 @@ impl Scene for RetrofyScene {
     gl::BindTexture(gl::TEXTURE_2D, self.text_texture_handle); // if not bound, we get the upside down red letters
     gl::Uniform1i(self.texture_loc, self.text_texture_number); // this should be from the text_fbo
     gl::Uniform1f(self.line_pos_loc, self.line_pos);
-    gl::Uniform4fv(self.retro_color_loc, 1, RETRO_COLOR.as_ptr());
+    gl::Uniform4fv(self.retro_color_loc, 1, self.retro_color.as_ptr());
     if let Some(pass) = &self.noise { pass.set(); }
     let mut rng = rand::thread_rng();
     let rand_val: f32 = rng.gen();

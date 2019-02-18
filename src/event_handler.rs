@@ -34,16 +34,16 @@ pub fn handle_events(events: &mut EventsLoop, running: &mut bool, window: &GlWin
             // text_scene.pop();
           },
           VirtualKeyCode::Up => {
-            text_scene.up();
+            text_scene.up(0);
           },
           VirtualKeyCode::Down => {
-            text_scene.down();
+            text_scene.down(0);
           },
           VirtualKeyCode::Right => {
-            text_scene.increase();
+            text_scene.increase(0);
           },
           VirtualKeyCode::Left => {
-            text_scene.decrease();
+            text_scene.decrease(0);
           },
           _ => (),
         },

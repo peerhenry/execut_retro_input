@@ -123,7 +123,7 @@ impl TextScene<'_> {
     }
   }
 
-  pub fn up(&mut self) {
+  pub fn up(&mut self, index: usize) {
     let new_selected: SelectedInput;
     match self.selected_input_array[0] {
       SelectedInput::Setting(setting) => {
@@ -138,10 +138,10 @@ impl TextScene<'_> {
         new_selected = SelectedInput::Setting(SpaceshipSetting::DodgeChance);
       }
     }
-    self.selected_input_array[0] = new_selected;
+    self.selected_input_array[index] = new_selected;
   }
 
-  pub fn down(&mut self) {
+  pub fn down(&mut self, index: usize) {
     let new_selected: SelectedInput;
     match self.selected_input_array[0] {
       SelectedInput::Setting(setting) => {
@@ -156,33 +156,33 @@ impl TextScene<'_> {
         new_selected = SelectedInput::Setting(SpaceshipSetting::Shields);
       }
     }
-    self.selected_input_array[0] = new_selected;
+    self.selected_input_array[index] = new_selected;
   }
 
-  fn change_setting(&mut self, index: usize, delta: i32)
+  fn change_setting(&mut self, setting_index: usize, delta: i32, player_index: usize)
   {
-    let new_val: i32 = self.setting_points_array[0][index].value as i32 + delta;
-    let new_remaining = self.points_remaining_array[0] as i32- delta;
+    let new_val: i32 = self.setting_points_array[player_index][setting_index].value as i32 + delta;
+    let new_remaining = self.points_remaining_array[player_index] as i32- delta;
     if new_remaining >= 0 && new_remaining <= 10 && new_val >= 0 {
-      self.setting_points_array[0][index].value = new_val as u32;
-      self.points_remaining_array[0] = new_remaining as u32;
+      self.setting_points_array[player_index][setting_index].value = new_val as u32;
+      self.points_remaining_array[player_index] = new_remaining as u32;
     }
   }
 
-  fn change(&mut self, delta: i32) {
-    match self.selected_input_array[0] {
+  fn change(&mut self, delta: i32, player_index: usize) {
+    match self.selected_input_array[player_index] {
       SelectedInput::Setting(setting) => {
         match setting {
-          SpaceshipSetting::Shields => { self.change_setting(0, delta); },
-          SpaceshipSetting::Firepower => { self.change_setting(1, delta); },
-          SpaceshipSetting::DefenseThickness => { self.change_setting(2, delta); },
-          SpaceshipSetting::DodgeChance => { self.change_setting(3, delta); },
+          SpaceshipSetting::Shields => { self.change_setting(0, delta, player_index); },
+          SpaceshipSetting::Firepower => { self.change_setting(1, delta, player_index); },
+          SpaceshipSetting::DefenseThickness => { self.change_setting(2, delta, player_index); },
+          SpaceshipSetting::DodgeChance => { self.change_setting(3, delta, player_index); },
         }
       },
       SelectedInput::Submit => {
-        self.selected_input_array[0] = SelectedInput::Setting(SpaceshipSetting::Shields);
+        self.selected_input_array[player_index] = SelectedInput::Setting(SpaceshipSetting::Shields);
         // todo:
-        self.points_remaining_array[0] = 10;
+        self.points_remaining_array[player_index] = 10;
         let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[0];
         setting_points[0].value = 0;
         setting_points[1].value = 0;
@@ -193,25 +193,25 @@ impl TextScene<'_> {
     }
   }
 
-  pub fn increase(&mut self) {
-    self.change(1);
+  pub fn increase(&mut self, player_index: usize) {
+    self.change(1, player_index);
   }
 
-  pub fn decrease(&mut self) {
-    self.change(-1);
+  pub fn decrease(&mut self, player_index: usize) {
+    self.change(-1, player_index);
   }
 
-  fn generate_string(&mut self) -> String {
+  fn generate_string(&mut self, player_index: usize) -> String {
     let mut lines: Vec<String> = vec![
       String::from("Welcome honorable guest."),
       String::from(""),
       String::from("Prepare for space invaders!"),
       String::from("Please input your spaceship settings..."),
       String::from(""),
-      String::from(format!("Points remaining: {}", self.points_remaining_array[0])),
+      String::from(format!("Points remaining: {}", self.points_remaining_array[player_index])),
       String::from(""),
     ];
-    let setting_points = self.setting_points_array[0].clone();
+    let setting_points = self.setting_points_array[player_index].clone();
     for (i, elem) in setting_points.iter().enumerate() {
       let settingName: &str;
       let points: u32 = elem.value;
@@ -226,7 +226,7 @@ impl TextScene<'_> {
     }
     lines.push(String::from(" "));
     lines.push(String::from("  SUBMIT"));
-    match self.selected_input_array[0] {
+    match self.selected_input_array[player_index] {
       SelectedInput::Setting(setting) => {
         match setting {
           SpaceshipSetting::Shields => { lines[7] = lines[7].replace("  ", "> "); },
@@ -247,7 +247,7 @@ impl TextScene<'_> {
     let width = self.dimensions.width as f32; // use this if you render to viewport
     let height = self.dimensions.height as _;
     let scale = Scale::uniform((self.font_size * window.get_hidpi_factor() as f32).round());
-    let input_string = self.generate_string();
+    let input_string = self.generate_string(0);
     self.glyph_brush.queue(Section {
       text: &input_string,
       scale,
@@ -257,9 +257,9 @@ impl TextScene<'_> {
       ..Section::default()
     });
 
-    let input_string_right = self.generate_string();
+    let input_string_right = self.generate_string(1);
     self.glyph_brush.queue(Section {
-      text: &input_string,
+      text: &input_string_right,
       scale,
       screen_position: (width - width/20.0, height/20.0),
       bounds: (width/2.0, height),

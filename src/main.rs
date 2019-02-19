@@ -61,15 +61,15 @@ fn main() -> Res<()> {
   );
   retrofy_scene.init();
 
-  // let printer = Printer::new("\\\\ADOLFO\\BONNETJES"); // todo: use system agnostic address
   let mut text_scene = TextScene::new(
     include_str!("shader/text.vert.glsl"), 
     include_str!("shader/text.frag.glsl"), 
     &window,
     Some(text_frame_buffer),
     nickname_generator,
-    // printer
   );
+  // let printer = Printer::new("\\\\ADOLFO\\BONNETJES"); // todo: use system agnostic address and move to file
+  // text_scene.printer = Some(printer);
   text_scene.init();
 
   let mut loop_helper = spin_sleep::LoopHelper::builder().build_with_target_rate(250.0);

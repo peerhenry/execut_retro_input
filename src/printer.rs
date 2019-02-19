@@ -10,21 +10,24 @@ pub struct PlayerSettings {
 pub struct Printer {
   logo: Image,
   space_invader: Image,
-  printer: escposify::printer::Printer<escposify::device::File::<File>>,
+  printer_address: String
+  // printer: escposify::printer::Printer<escposify::device::File::<File>>,
 }
 
 impl Printer {
   pub fn new(printer_address: &str) -> Printer { // "\\\\ADOLFO\\BONNETJES"
-    let printer_file = escposify::device::File::<File>::new(printer_address);
     Printer {
       logo: Image::new("assets/infi.bmp"),
       space_invader: Image::new("assets/space-invader.bmp"),
-      printer: escposify::printer::Printer::new(printer_file, None, None),
+      printer_address: printer_address.to_string()
+      // printer: escposify::printer::Printer::new(printer_file, None, None),
     }
   }
 
-  pub fn print(&mut self, player_settings: PlayerSettings) {
-    self.printer
+  pub fn print(&self, player_settings: PlayerSettings) {
+    let printer_file = escposify::device::File::<File>::new(&self.printer_address);
+    let mut printer = escposify::printer::Printer::new(printer_file, None, None);
+    printer
     .font("C")
     .align("lt") // LT, CT, RT
     .style("bu")

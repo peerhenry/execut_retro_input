@@ -44,8 +44,36 @@ pub struct TextScene<'a> {
   setting_points_array: [[SpaceshipSettingValue; 4]; 2],
   player_names: [String; 2],
   nickname_generator: NicknameGenerator,
-  // printer: Printer
+  pub printer: Option<Printer>
 }
+
+// todo: implement default
+/* impl Default for TextScene {
+  fn default() -> Self {
+    TextScene {
+      program,  // todo: option here?
+      vbo: 0,
+      vao: 0,
+      glyph_texture: 0,
+      glyph_brush, // todo: option here?
+      String::new(),
+      font_size: 38.0, // was 18.0 in initial example
+      vertex_count: 0,
+      vertex_max: 0,
+      dimensions, // todo
+      frame_buffer: None,
+      font_tex_loc: -1,
+      selected_input_array: [SelectedInput::Setting(SpaceshipSetting::Shields), SelectedInput::Setting(SpaceshipSetting::Shields)],
+      points_remaining_array: [10, 10],
+      setting_points_array: [settings, settings_right],
+      nickname_generator,
+      player_names: [left_player_name, right_player_name],
+      printer: None
+      // ..Default::default() // doesnt work for arrays
+    }
+  }
+}
+*/
 
 impl TextScene<'_> {
   pub fn new(
@@ -97,7 +125,7 @@ impl TextScene<'_> {
       setting_points_array: [settings, settings_right],
       nickname_generator,
       player_names: [left_player_name, right_player_name],
-      // printer
+      printer: None
       // ..Default::default() // doesnt work for arrays
     }
   }
@@ -178,13 +206,15 @@ impl TextScene<'_> {
         let name_copy = self.player_names[player_index].clone();
         let name: &str = &self.player_names[player_index];
         println!("Saving settings for {}", name); // DEBUG
-        // send to printer
-        /*self.printer.print(PlayerSettings {
-          nickname: name_copy,
-          setting_values: self.setting_points_array[0].clone()
-        });*/
-        // todo: send to endpoint
-        // create new nickname
+        // 1. todo: send to endpoint
+        // 2. send to printer
+        if let Some(printer) = &self.printer {
+          printer.print(PlayerSettings {
+            nickname: name_copy,
+            setting_values: self.setting_points_array[0].clone()
+          });
+        }
+        // 3. create new nickname
         self.player_names[player_index] = self.nickname_generator.generate_nickname();
       }
     }

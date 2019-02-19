@@ -56,8 +56,8 @@ impl TextScene<'_> {
     nickname_generator: NicknameGenerator,
     // printer: Printer
   ) -> Self {
-    // let font_bytes: &[u8] = include_bytes!("../fonts/retro computer_demo.ttf");
-    let font_bytes: &[u8] = include_bytes!("../fonts/space_invaders.ttf");
+    // let font_bytes: &[u8] = include_bytes!("../assets/fonts/retro computer_demo.ttf");
+    let font_bytes: &[u8] = include_bytes!("../assets/fonts/space_invaders.ttf");
     let glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
     // let text: String = include_str!("text/lipsum.txt").into();
     let text: String = include_str!("text/input.txt").into();
@@ -164,7 +164,7 @@ impl TextScene<'_> {
         }
       },
       SelectedInput::Submit => {
-        if( self.points_remaining_array[player_index] > 0 ) {
+        if self.points_remaining_array[player_index] > 0 {
           // maybe show a message that all points must be distributed?
           return;
         }

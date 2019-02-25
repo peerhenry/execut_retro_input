@@ -1,8 +1,10 @@
 use rand::*;
+use std::collections::HashMap;
 
 pub struct NicknameGenerator {
   adjectives: Vec<String>,
   nouns: Vec<String>,
+  taken_names: HashMap<String, u32>
 }
 
 fn take_random_elem(vec: &Vec<String>) -> &str {
@@ -30,7 +32,8 @@ impl NicknameGenerator {
   pub fn new(adjectives_string: &str, nouns_string: &str) -> Self {
     NicknameGenerator {
       adjectives: make_vec(adjectives_string),
-      nouns: make_vec(nouns_string)
+      nouns: make_vec(nouns_string),
+      taken_names: HashMap::new()
     }
   }
 
@@ -38,6 +41,8 @@ impl NicknameGenerator {
     // call endpoint to see if name is taken
     let adj: &str = take_random_elem(&self.adjectives);
     let noun: &str = take_random_elem(&self.nouns);
-    format!("{} {}", adj, noun)
+    let nickname = format!("{} {}", adj, noun);
+    // check if nickname is taken
+    nickname
   }
 }

@@ -80,7 +80,7 @@ impl TextScene<'_> {
     fs_glsl: &str, 
     window: &glutin::GlWindow, 
     frame_buffer: Option<Framebuffer>, 
-    nickname_generator: NicknameGenerator,
+    mut nickname_generator: NicknameGenerator,
     // printer: Printer
   ) -> Self {
     // let font_bytes: &[u8] = include_bytes!("../assets/fonts/retro computer_demo.ttf");

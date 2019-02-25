@@ -18,13 +18,6 @@ fn make_vec(string_thing: &str) -> Vec<String> {
   while let Some(line) = lines.next() {
     string_vec.push(line.to_string());
   }
-
-  /*let splits = string_thing.split('\n');
-  let ref_vec = splits.collect::<Vec<&str>>();
-  for s in &ref_vec {
-    string_vec.push(s.to_string());
-  }*/
-
   string_vec
 }
 
@@ -37,12 +30,52 @@ impl NicknameGenerator {
     }
   }
 
-  pub fn generate_nickname(&self) -> String {
-    // call endpoint to see if name is taken
+  fn register_nickname(&mut self, nickname: String) -> String {
+    let count = self.taken_names.entry(nickname.clone()).or_insert(0);
+    *count += 1;
+    let final_nickname = if *count > 1 {
+      format!("{} {}", nickname, count)
+     } else { nickname };
+    final_nickname
+  }
+
+  pub fn generate_nickname(&mut self) -> String {
     let adj: &str = take_random_elem(&self.adjectives);
     let noun: &str = take_random_elem(&self.nouns);
     let nickname = format!("{} {}", adj, noun);
-    // check if nickname is taken
-    nickname
+    let final_nickname = self.register_nickname(nickname);
+    final_nickname
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::NicknameGenerator;
+
+  #[test]
+  fn test_generate_nickname() {
+    let mut gen = NicknameGenerator::new("bad", "Man");
+    let result = gen.generate_nickname();
+    let expected = "bad Man";
+    assert_eq!(expected, result);
+  }
+
+  #[test]
+  fn test_taken_nickname() {
+    let mut gen = NicknameGenerator::new("bad", "man");
+    gen.generate_nickname();
+    let result = gen.generate_nickname();
+    let expected = "bad man 2";
+    assert_eq!(expected, result);
+  }
+
+  #[test]
+  fn test_two_taken_nickname() {
+    let mut gen = NicknameGenerator::new("bad", "man");
+    gen.generate_nickname();
+    gen.generate_nickname();
+    let result = gen.generate_nickname();
+    let expected = "bad man 3";
+    assert_eq!(expected, result);
   }
 }

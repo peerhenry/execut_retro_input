@@ -32,7 +32,6 @@ pub struct TextScene<'a> {
   vao: GLuint,
   glyph_texture: GLuint,
   glyph_brush: GlyphBrush<'a>,
-  text: String,
   pub font_size: f32,
   vertex_count: usize,
   vertex_max: usize,
@@ -113,7 +112,6 @@ impl TextScene<'_> {
       vao: 0,
       glyph_texture: 0,
       glyph_brush,
-      text,
       font_size: 38.0, // was 18.0 in initial example
       vertex_count: 0,
       vertex_max: 0,
@@ -198,7 +196,8 @@ impl TextScene<'_> {
         }
         self.selected_input_array[player_index] = SelectedInput::Setting(SpaceshipSetting::Shields);
         self.points_remaining_array[player_index] = 10;
-        let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[0];
+        let cloned_settings = self.setting_points_array[player_index].clone();
+        let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[player_index];
         setting_points[0].value = 0;
         setting_points[1].value = 0;
         setting_points[2].value = 0;
@@ -211,7 +210,7 @@ impl TextScene<'_> {
         if let Some(printer) = &self.printer {
           printer.print(PlayerSettings {
             nickname: name_copy,
-            setting_values: self.setting_points_array[0].clone()
+            setting_values: cloned_settings
           });
         }
         // 3. create new nickname

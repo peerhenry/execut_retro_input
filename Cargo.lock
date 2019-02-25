@@ -442,6 +442,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hostname"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.2.48 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winutil 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "image"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -897,6 +906,7 @@ dependencies = [
  "glyph_brush 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glyph_brush_layout 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "hashbrown 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "ordered-float 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1172,6 +1182,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "winutil"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "x11-dl"
 version = "2.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1250,6 +1268,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum glyph_brush 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b48c6f24829f6474bf4261a5e88a50ea98226853aa1840803c94a9b96115ea89"
 "checksum glyph_brush_layout 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "82a3788cddceeb6f41d2d7e75c6f7adcb08a8f82ad342e5a6d1328425328ab91"
 "checksum hashbrown 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "3bae29b6653b3412c2e71e9d486db9f9df5d701941d86683005efb9f2d28e3da"
+"checksum hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "21ceb46a83a85e824ef93669c8b390009623863b5c195d1ba747292c0c72f94e"
 "checksum image 0.12.4 (registry+https://github.com/rust-lang/crates.io-index)" = "d95816db758249fe16f23a4e23f1a3a817fe11892dbfd1c5836f625324702158"
 "checksum inflate 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e7e0062d2dc2f17d2f13750d95316ae8a2ff909af0fda957084f5defd87c43bb"
 "checksum jpeg-decoder 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)" = "c8b7d43206b34b3f94ea9445174bda196e772049b9bddbc620c9d29b2d20110d"
@@ -1333,6 +1352,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum winapi-util 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7168bab6e1daee33b4557efd0e95d5ca70a03706d39fa5f3fe7a236f584b03c9"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 "checksum winit 0.18.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8c57c15bd4c0ef18dff33e263e452abe32d00e2e05771cacaa410a14cc1c0776"
+"checksum winutil 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7daf138b6b14196e3830a588acf1e86966c694d3e8fb026fb105b8b5dca07e6e"
 "checksum x11-dl 2.18.3 (registry+https://github.com/rust-lang/crates.io-index)" = "940586acb859ea05c53971ac231685799a7ec1dee66ac0bccc0e6ad96e06b4e3"
 "checksum xdg 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d089681aa106a86fade1b0128fb5daf07d5867a509ab036d99988dec80429a57"
 "checksum xi-unicode 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "12ea8eda4b1eb72f02d148402e23832d56a33f55d8c1b2d5bcdde91d79d47cb1"

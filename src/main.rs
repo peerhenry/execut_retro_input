@@ -4,6 +4,7 @@
 use gl::types::GLsizei;
 use glutin::{GlWindow};
 use spin_sleep::LoopHelper;
+use hostname::get_hostname;
 
 mod shader_compiler;
 mod gl_buffers;
@@ -68,8 +69,12 @@ fn main() -> Res<()> {
     Some(text_frame_buffer),
     nickname_generator,
   );
-  // let printer = Printer::new("\\\\ADOLFO\\BONNETJES"); // todo: use system agnostic address and move to file
-  // text_scene.printer = Some(printer);
+
+  let host_name = get_hostname().expect("yoyoyo");
+  println!("{}", host_name);
+  let printer_address = format!("\\\\{}\\EPSON", host_name);
+  let printer = Printer::new(&printer_address);
+  text_scene.printer = Some(printer);
   text_scene.init();
 
   let mut loop_helper = spin_sleep::LoopHelper::builder().build_with_target_rate(250.0);

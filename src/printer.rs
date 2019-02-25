@@ -15,7 +15,7 @@ pub struct Printer {
 }
 
 impl Printer {
-  pub fn new(printer_address: &str) -> Printer { // "\\\\ADOLFO\\BONNETJES"
+  pub fn new(printer_address: &str) -> Printer { // "\\\\<pc-name>\\EPSON"
     Printer {
       logo: Image::new("assets/infi.bmp"),
       space_invader: Image::new("assets/space-invader.bmp"),

@@ -30,6 +30,8 @@ use printer::*;
 mod nickname_generator;
 use nickname_generator::*;
 mod spaceship_settings;
+mod execut_api;
+use execut_api::*;
 
 // SOME COLORS
 // [164.0/255.0, 252.0/255.0, 212.0/255.0, 255.0]; // very light teal
@@ -43,6 +45,10 @@ pub const RETRO_COLOR_RIGHT: [f32; 4] = [200.0/255.0, 22.0/255.0, 2.0/255.0, 255
 pub type Res<T> = Result<T, Box<std::error::Error>>;
 
 fn main() -> Res<()> {
+  println!("====== fetch_taken_nicknames");
+  fetch_taken_nicknames()?;
+  println!("====== fetch_taken_nicknames");
+
   let title = "glyph_brush opengl example - scroll to size, type to modify";
   let (window, mut events) = init_context(title)?;
   // INIT

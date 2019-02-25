@@ -19,6 +19,7 @@ hashbrown = "0.1"
 rand = "0.6.5"
 escposify = "0.1.4"
 hostname = "0.1.5"
+reqwest = "0.9.10"
 
 [dev-dependencies]
 lazy_static = "1"

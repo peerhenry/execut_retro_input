@@ -16,6 +16,7 @@ use crate::RETRO_COLOR_RIGHT;
 use crate::nickname_generator::*;
 use crate::spaceship_settings::*;
 use crate::printer::*;
+use crate::execut_api::*;
 
 enum SelectedInput {
   Setting(SpaceshipSetting),
@@ -87,7 +88,6 @@ impl TextScene<'_> {
     let font_bytes: &[u8] = include_bytes!("../assets/fonts/space_invaders.ttf");
     let glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
     // let text: String = include_str!("text/lipsum.txt").into();
-    let text: String = include_str!("text/input.txt").into();
     let dimensions = window
       .get_inner_size()
       .ok_or("get_inner_size = None").unwrap()
@@ -205,7 +205,11 @@ impl TextScene<'_> {
         let name_copy = self.player_names[player_index].clone();
         let name: &str = &self.player_names[player_index];
         println!("Saving settings for {}", name); // DEBUG
-        // 1. todo: send to endpoint
+        // 1. send to endpoint
+        let result: Result<(), _> = post_new_player(name_copy.clone());
+        if let Err(_) = result {
+          panic!("Could not post new player");
+        }
         // 2. send to printer
         if let Some(printer) = &self.printer {
           printer.print(PlayerSettings {

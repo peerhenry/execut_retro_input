@@ -40,7 +40,14 @@ impl NicknameGenerator {
 
   fn set_taken_nicknames(&mut self, taken_nicknames: Vec<String>) {
     for name in taken_nicknames {
-      self.register_nickname(String::from(name));
+      let splits: Vec<&str> = name.split(" ").collect();
+      let last = splits[splits.len() - 1];
+      if last.parse::<f64>().is_ok() {
+        let actual_name = splits[0..splits.len() - 1].join(" ");
+        self.register_nickname(String::from(actual_name));
+      } else {
+        self.register_nickname(String::from(name));
+      }
     }
   }
 
@@ -48,8 +55,9 @@ impl NicknameGenerator {
     let count = self.taken_names.entry(nickname.clone()).or_insert(0);
     *count += 1;
     let final_nickname = if *count > 1 {
-      format!("{} {}", nickname, count)
-     } else { nickname };
+      let nickname_with_counter = format!("{} {}", nickname, count);
+      self.register_nickname(nickname_with_counter)
+    } else { nickname };
     final_nickname
   }
 
@@ -98,6 +106,14 @@ mod tests {
     let mut gen = NicknameGenerator::new("bad", "man", vec![String::from("Bad Man")]);
     let result = gen.generate_nickname();
     let expected = "Bad Man 2";
+    assert_eq!(expected, result);
+  }
+
+  #[test]
+  fn test_taken_nicknames_constructor_two() {
+    let mut gen = NicknameGenerator::new("bad", "man", vec![String::from("Bad Man"), String::from("Bad Man 2")]);
+    let result = gen.generate_nickname();
+    let expected = "Bad Man 3";
     assert_eq!(expected, result);
   }
 }

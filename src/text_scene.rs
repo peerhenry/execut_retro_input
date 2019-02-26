@@ -44,7 +44,8 @@ pub struct TextScene<'a> {
   setting_points_array: [[SpaceshipSettingValue; 4]; 2],
   player_names: [String; 2],
   nickname_generator: NicknameGenerator,
-  pub printer: Option<Printer>
+  pub printer: Option<Printer>,
+  appendix: String
 }
 
 impl TextScene<'_> {
@@ -95,8 +96,8 @@ impl TextScene<'_> {
       setting_points_array: [settings, settings_right],
       nickname_generator,
       player_names: [left_player_name, right_player_name],
-      printer: None
-      // ..Default::default() // doesnt work for arrays
+      printer: None,
+      appendix: String::new()
     }
   }
 
@@ -180,19 +181,22 @@ impl TextScene<'_> {
     // 1. send to endpoint
     let result: Result<(), _> = post_new_player(name_copy.clone());
     if let Err(_) = result {
-      panic!("Could not post new player");
+      self.appendix = String::from("API error: Try again later");
+      return;
     }
     if let Some(printer) = &self.printer {
       // 2. send to printer
       printer.print(PlayerSettings {
-        nickname: name_copy,
+        nickname: name_copy.clone(),
         setting_values: cloned_settings
       });
-      // 3. create new nickname
-      self.player_names[player_index] = self.nickname_generator.generate_nickname();
     } else {
-      println!("Could not find printer"); // DEBUG
+      self.appendix = format!("Could not find printer\nPlease take a picture this screen.\nYour nickname: {}", name_copy.clone());
     }
+
+    // 3. create new nickname
+    self.player_names[player_index] = self.nickname_generator.generate_nickname();
+
     // 4. reset points
     let mut i = setting_points.len();
     while i > 0 {
@@ -248,6 +252,8 @@ impl TextScene<'_> {
         lines[12] = lines[12].replace("  ", "> "); 
       }
     }
+    lines.push(String::from(" "));
+    lines.push(self.appendix.clone());
     lines.join("\n")
   }
 
@@ -258,6 +264,7 @@ impl TextScene<'_> {
     let scale = Scale::uniform((self.font_size * window.get_hidpi_factor() as f32).round());
     // let scale = rusttype::Scale::uniform(10.0); 
     let input_string = self.generate_string(0);
+    // example @ https://github.com/alexheretic/glyph-brush/blob/master/glyph-brush/examples/opengl.rs
     self.glyph_brush.queue(Section {
       text: &input_string,
       scale,
@@ -280,47 +287,7 @@ impl TextScene<'_> {
       ..Section::default()
     });
 
-    /*
-    // println!("Time queu glyph brush section 1"); // DEBUG
-    self.glyph_brush.queue(Section {
-      text: &self.text,
-      scale,
-      screen_position: (0.0, 0.0),
-      bounds: (width / 3.15, height),
-      color: [0.9, 0.3, 0.3, 1.0],
-      ..Section::default()
-    });
-    
-    // println!("Time queu glyph brush section 2"); // DEBUG
-    self.glyph_brush.queue(Section {
-      text: &self.text,
-      scale,
-      screen_position: (width / 2.0, height / 2.0),
-      bounds: (width / 3.15, height),
-      color: [0.3, 0.9, 0.3, 1.0],
-      layout: Layout::default()
-        .h_align(HorizontalAlign::Center)
-        .v_align(VerticalAlign::Center),
-      ..Section::default()
-    });
-
-    // println!("Time queu glyph brush section 3"); // DEBUG
-    self.glyph_brush.queue(Section {
-      text: &self.text,
-      scale,
-      screen_position: (width, height),
-      bounds: (width / 3.15, height),
-      color: [0.3, 0.3, 0.9, 1.0],
-      layout: Layout::default()
-        .h_align(HorizontalAlign::Right)
-        .v_align(VerticalAlign::Bottom),
-      ..Section::default()
-    });
-    // ^^^^ glyph brush queue ^^^^
-    */
-
     // vvvv handle glyph brush action vvvv
-    // println!("Time to loop over brush actions"); // DEBUG
     let mut brush_action;
     loop {
       unsafe { gl::BindTexture(gl::TEXTURE_2D, self.glyph_texture); }

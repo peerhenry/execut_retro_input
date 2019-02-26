@@ -39,17 +39,14 @@ use execut_api::*;
 // [200.0/255.0, 22.0/255.0, 2.0/255.0, 255.0]; // reddish
 // [47.0/255.0, 218.0/255.0, 176.0/255.0, 255.0]; // a bit more colorful greenish
 
+pub const OS_COLOR: [f32; 4] = [200.0/255.0, 200.0/255.0, 200.0/255.0, 255.0]; // a bit more colorful greenish
 pub const RETRO_COLOR_LEFT: [f32; 4] = [47.0/255.0, 218.0/255.0, 176.0/255.0, 255.0]; // a bit more colorful greenish
 pub const RETRO_COLOR_RIGHT: [f32; 4] = [200.0/255.0, 22.0/255.0, 2.0/255.0, 255.0]; // reddish
 
 pub type Res<T> = Result<T, Box<std::error::Error>>;
 
 fn main() -> Res<()> {
-  println!("====== fetch_taken_nicknames");
-  fetch_taken_nicknames()?;
-  println!("====== fetch_taken_nicknames");
-
-  let title = "glyph_brush opengl example - scroll to size, type to modify";
+  let title = "Infi Execut";
   let (window, mut events) = init_context(title)?;
   // INIT
   let f_width: GLsizei = 1920; // 1920;
@@ -57,7 +54,8 @@ fn main() -> Res<()> {
   let text_frame_buffer = Framebuffer::new(gl::TEXTURE0, f_width, f_height);
   let text_texture = text_frame_buffer.tex_handle;
   let text_fbo_texture_number = text_frame_buffer.texture_number;
-  let nickname_generator = NicknameGenerator::new(include_str!("../assets/adjectives.txt"), include_str!("../assets/nouns.txt"));
+  let taken_nicknames = fetch_taken_nicknames()?;
+  let nickname_generator = NicknameGenerator::new(include_str!("../assets/adjectives.txt"), include_str!("../assets/nouns.txt"), taken_nicknames);
 
   // generating other framebuffers in noisescene somehow interferes with text_scene; it renders semi-transparant quads instead of glyphs
   let mut retrofy_scene = RetrofyScene::new(
@@ -88,10 +86,12 @@ fn main() -> Res<()> {
   // RUN
   while running {
     loop_helper.loop_start();
-    handle_events(&mut events, &mut running, &window, &mut text_scene)?;
-    retrofy_scene.update();
-    text_scene.update(&window);
-    draw(&retrofy_scene, &text_scene, &window)?;
+    { // active input state
+      handle_events(&mut events, &mut running, &window, &mut text_scene)?;
+      retrofy_scene.update();
+      text_scene.update(&window);
+      draw(&retrofy_scene, &text_scene, &window)?;
+    }
     update_loop_helper(&mut loop_helper, &window, title);
   }
   // CLEANUP

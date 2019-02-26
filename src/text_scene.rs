@@ -198,10 +198,11 @@ impl TextScene<'_> {
         self.points_remaining_array[player_index] = 10;
         let cloned_settings = self.setting_points_array[player_index].clone();
         let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[player_index];
-        setting_points[0].value = 0;
-        setting_points[1].value = 0;
-        setting_points[2].value = 0;
-        setting_points[3].value = 0;
+        let mut i = setting_points.len();
+        while i > 0 {
+          i = i - 1;
+          setting_points[i].value = 0;
+        }
         let name_copy = self.player_names[player_index].clone();
         let name: &str = &self.player_names[player_index];
         println!("Saving settings for {}", name); // DEBUG

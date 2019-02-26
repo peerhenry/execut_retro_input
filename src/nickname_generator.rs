@@ -16,17 +16,31 @@ fn make_vec(string_thing: &str) -> Vec<String> {
   let mut string_vec: Vec<String> = Vec::new();
   let mut lines = string_thing.lines();
   while let Some(line) = lines.next() {
-    string_vec.push(line.to_string());
+    string_vec.push(capitalize(line));
   }
   string_vec
 }
 
+fn capitalize(thing: &str) -> String {
+  let mut v: Vec<char> = thing.chars().collect();
+  v[0] = v[0].to_uppercase().nth(0).unwrap();
+  v.into_iter().collect()
+}
+
 impl NicknameGenerator {
-  pub fn new(adjectives_string: &str, nouns_string: &str) -> Self {
-    NicknameGenerator {
+  pub fn new(adjectives_string: &str, nouns_string: &str, taken_nicknames: Vec<String>) -> Self {
+    let mut output = NicknameGenerator {
       adjectives: make_vec(adjectives_string),
       nouns: make_vec(nouns_string),
       taken_names: HashMap::new()
+    };
+    output.set_taken_nicknames(taken_nicknames);
+    output
+  }
+
+  fn set_taken_nicknames(&mut self, taken_nicknames: Vec<String>) {
+    for name in taken_nicknames {
+      self.register_nickname(String::from(name));
     }
   }
 
@@ -54,28 +68,36 @@ mod tests {
 
   #[test]
   fn test_generate_nickname() {
-    let mut gen = NicknameGenerator::new("bad", "Man");
+    let mut gen = NicknameGenerator::new("bad", "Man", vec![]);
     let result = gen.generate_nickname();
-    let expected = "bad Man";
+    let expected = "Bad Man";
     assert_eq!(expected, result);
   }
 
   #[test]
   fn test_taken_nickname() {
-    let mut gen = NicknameGenerator::new("bad", "man");
+    let mut gen = NicknameGenerator::new("bad", "man", vec![]);
     gen.generate_nickname();
     let result = gen.generate_nickname();
-    let expected = "bad man 2";
+    let expected = "Bad Man 2";
     assert_eq!(expected, result);
   }
 
   #[test]
-  fn test_two_taken_nickname() {
-    let mut gen = NicknameGenerator::new("bad", "man");
+  fn test_two_taken_nicknames() {
+    let mut gen = NicknameGenerator::new("bad", "man", vec![]);
     gen.generate_nickname();
     gen.generate_nickname();
     let result = gen.generate_nickname();
-    let expected = "bad man 3";
+    let expected = "Bad Man 3";
+    assert_eq!(expected, result);
+  }
+
+  #[test]
+  fn test_taken_nicknames_constructor() {
+    let mut gen = NicknameGenerator::new("bad", "man", vec![String::from("Bad Man")]);
+    let result = gen.generate_nickname();
+    let expected = "Bad Man 2";
     assert_eq!(expected, result);
   }
 }

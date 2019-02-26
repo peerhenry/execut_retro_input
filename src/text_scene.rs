@@ -47,34 +47,6 @@ pub struct TextScene<'a> {
   pub printer: Option<Printer>
 }
 
-// todo: implement default
-/* impl Default for TextScene {
-  fn default() -> Self {
-    TextScene {
-      program,  // todo: option here?
-      vbo: 0,
-      vao: 0,
-      glyph_texture: 0,
-      glyph_brush, // todo: option here?
-      String::new(),
-      font_size: 38.0, // was 18.0 in initial example
-      vertex_count: 0,
-      vertex_max: 0,
-      dimensions, // todo
-      frame_buffer: None,
-      font_tex_loc: -1,
-      selected_input_array: [SelectedInput::Setting(SpaceshipSetting::Shields), SelectedInput::Setting(SpaceshipSetting::Shields)],
-      points_remaining_array: [10, 10],
-      setting_points_array: [settings, settings_right],
-      nickname_generator,
-      player_names: [left_player_name, right_player_name],
-      printer: None
-      // ..Default::default() // doesnt work for arrays
-    }
-  }
-}
-*/
-
 impl TextScene<'_> {
   pub fn new(
     vs_glsl: &str, 
@@ -190,37 +162,42 @@ impl TextScene<'_> {
         }
       },
       SelectedInput::Submit => {
-        if self.points_remaining_array[player_index] > 0 {
-          // maybe show a message that all points must be distributed?
-          return;
-        }
-        self.selected_input_array[player_index] = SelectedInput::Setting(SpaceshipSetting::Shields);
-        self.points_remaining_array[player_index] = 10;
-        let cloned_settings = self.setting_points_array[player_index].clone();
-        let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[player_index];
-        let mut i = setting_points.len();
-        while i > 0 {
-          i = i - 1;
-          setting_points[i].value = 0;
-        }
-        let name_copy = self.player_names[player_index].clone();
-        let name: &str = &self.player_names[player_index];
-        println!("Saving settings for {}", name); // DEBUG
-        // 1. send to endpoint
-        let result: Result<(), _> = post_new_player(name_copy.clone());
-        if let Err(_) = result {
-          panic!("Could not post new player");
-        }
-        // 2. send to printer
-        if let Some(printer) = &self.printer {
-          printer.print(PlayerSettings {
-            nickname: name_copy,
-            setting_values: cloned_settings
-          });
-        }
-        // 3. create new nickname
-        self.player_names[player_index] = self.nickname_generator.generate_nickname();
+        self.submit(player_index);
       }
+    }
+  }
+
+  fn submit(&mut self, player_index: usize) {
+    if self.points_remaining_array[player_index] > 0 {
+      // maybe show a message that all points must be distributed?
+      return;
+    }
+    self.selected_input_array[player_index] = SelectedInput::Setting(SpaceshipSetting::Shields);
+    self.points_remaining_array[player_index] = 10;
+    let cloned_settings = self.setting_points_array[player_index].clone();
+    let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[player_index];
+    let name_copy = self.player_names[player_index].clone();
+    // 1. send to endpoint
+    let result: Result<(), _> = post_new_player(name_copy.clone());
+    if let Err(_) = result {
+      panic!("Could not post new player");
+    }
+    if let Some(printer) = &self.printer {
+      // 2. send to printer
+      printer.print(PlayerSettings {
+        nickname: name_copy,
+        setting_values: cloned_settings
+      });
+      // 3. create new nickname
+      self.player_names[player_index] = self.nickname_generator.generate_nickname();
+    } else {
+      println!("Could not find printer"); // DEBUG
+    }
+    // 4. reset points
+    let mut i = setting_points.len();
+    while i > 0 {
+      i = i - 1;
+      setting_points[i].value = 0;
     }
   }
 
@@ -244,16 +221,16 @@ impl TextScene<'_> {
       String::from(""),
     ];
     let setting_points = self.setting_points_array[player_index].clone();
-    for (i, elem) in setting_points.iter().enumerate() {
-      let settingName: &str;
+    for (_i, elem) in setting_points.iter().enumerate() {
+      let setting_name: &str;
       let points: u32 = elem.value;
       match elem.setting {
-        SpaceshipSetting::Shields => { settingName = "  Shields"; },
-        SpaceshipSetting::Firepower => { settingName = "  Firepower"; },
-        SpaceshipSetting::DefenseThickness => { settingName = "  DefenseThickness"; },
-        SpaceshipSetting::DodgeChance => { settingName = "  DodgeChance"; },
+        SpaceshipSetting::Shields => { setting_name = "  Shields"; },
+        SpaceshipSetting::Firepower => { setting_name = "  Firepower"; },
+        SpaceshipSetting::DefenseThickness => { setting_name = "  DefenseThickness"; },
+        SpaceshipSetting::DodgeChance => { setting_name = "  DodgeChance"; },
       }
-      let new_line: String = format!("{}: {}", settingName, points);
+      let new_line: String = format!("{}: {}", setting_name, points);
       lines.push(new_line);
     }
     lines.push(String::from(" "));
@@ -467,12 +444,13 @@ impl Scene for TextScene<'_> {
       }
       
       // Use shader program
-      gl::UseProgram(self.program.handle);
-      gl::BindFragDataLocation(self.program.handle, 0, CString::new("out_color").unwrap().as_ptr());
+      let program_handle = self.program.handle;
+      gl::UseProgram(program_handle);
+      gl::BindFragDataLocation(program_handle, 0, CString::new("out_color").unwrap().as_ptr());
 
       // Specify the layout of the vertex data
       setup_attribs(
-        self.program.handle, 
+        program_handle, 
         mem::size_of::<VertexForGlyph>() as _, 
         true,
         &[
@@ -495,14 +473,14 @@ impl Scene for TextScene<'_> {
   }
 
   unsafe fn draw(&self) {
+    let program_handle = self.program.handle;
     if let Some(frame_buffer) = self.frame_buffer { frame_buffer.bind(); }
     else { gl::BindFramebuffer(gl::FRAMEBUFFER, 0); }
     gl::ClearColor(0.02, 0.02, 0.02, 1.0);
     gl::Clear(gl::COLOR_BUFFER_BIT);
-    gl::UseProgram(self.program.handle);
+    gl::UseProgram(program_handle);
     gl::BindTexture(gl::TEXTURE_2D, self.glyph_texture);
     gl::Uniform1i(self.font_tex_loc, 0);
-
     gl::BindVertexArray(self.vao);
     gl::DrawArraysInstanced(gl::TRIANGLE_STRIP, 0, 4, self.vertex_count as _);
   }

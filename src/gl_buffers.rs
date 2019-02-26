@@ -1,6 +1,6 @@
 use std::{
     ffi::CString,
-    mem, ptr, 
+    mem //, ptr, 
 };
 use gl::types::*;
 use super::Res;

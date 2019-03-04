@@ -1,30 +1,32 @@
-use glutin::dpi::PhysicalSize;
-use std::{
-    ffi::CString,
-    mem, ptr, 
-};
-use gl::types::*;
-use glyph_brush::{rusttype::*, *};
-use crate::scene::*;
-use crate::shader_compiler::*;
+pub mod text_scene_text;
+use self::text_scene_text::{generate_string, TextVariables};
+use crate::execut_http_client::*;
+use crate::frame_buffer::*;
 use crate::gl_buffers::*;
 use crate::gl_error_handler::*;
 use crate::helpers_for_glyph::*;
-use crate::frame_buffer::*;
+use crate::nickname_generator::*;
+use crate::printer::*;
+use crate::scene::*;
+use crate::shader_compiler::*;
+use crate::spaceship_settings::*;
 use crate::RETRO_COLOR_LEFT;
 use crate::RETRO_COLOR_RIGHT;
-use crate::nickname_generator::*;
-use crate::spaceship_settings::*;
-use crate::printer::*;
-use crate::execut_api::*;
+use gl::types::*;
+use glutin::dpi::PhysicalSize;
+use glyph_brush::{rusttype::*, *};
+use std::{ffi::CString, mem, ptr};
 
-enum SelectedInput {
+#[derive(Copy, Clone)]
+pub enum SelectedInput {
   Setting(SpaceshipSetting),
-  Submit
+  Submit,
 }
 
 impl Default for SelectedInput {
-  fn default() -> Self { SelectedInput::Setting(SpaceshipSetting::default()) }
+  fn default() -> Self {
+    SelectedInput::Setting(SpaceshipSetting::default())
+  }
 }
 
 pub struct TextScene<'a> {
@@ -45,15 +47,15 @@ pub struct TextScene<'a> {
   player_names: [String; 2],
   nickname_generator: NicknameGenerator,
   pub printer: Option<Printer>,
-  appendix: String
+  appendix: String,
 }
 
 impl TextScene<'_> {
   pub fn new(
-    vs_glsl: &str, 
-    fs_glsl: &str, 
-    window: &glutin::GlWindow, 
-    frame_buffer: Option<Framebuffer>, 
+    vs_glsl: &str,
+    fs_glsl: &str,
+    window: &glutin::GlWindow,
+    frame_buffer: Option<Framebuffer>,
     mut nickname_generator: NicknameGenerator,
     // printer: Printer
   ) -> Self {
@@ -63,16 +65,20 @@ impl TextScene<'_> {
     // let text: String = include_str!("text/lipsum.txt").into();
     let dimensions = window
       .get_inner_size()
-      .ok_or("get_inner_size = None").unwrap()
+      .ok_or("get_inner_size = None")
+      .unwrap()
       .to_physical(window.get_hidpi_factor());
     let program = build_shader_program(vs_glsl, fs_glsl).unwrap();
     let font_tex_loc: GLint;
-    unsafe { font_tex_loc = gl::GetUniformLocation(program.handle, CString::new("baseRand").unwrap().as_ptr()); }
+    unsafe {
+      font_tex_loc =
+        gl::GetUniformLocation(program.handle, CString::new("baseRand").unwrap().as_ptr());
+    }
     let settings: [SpaceshipSettingValue; 4] = [
       SpaceshipSettingValue::new(SpaceshipSetting::Shields),
       SpaceshipSettingValue::new(SpaceshipSetting::Firepower),
       SpaceshipSettingValue::new(SpaceshipSetting::DefenseThickness),
-      SpaceshipSettingValue::new(SpaceshipSetting::DodgeChance)
+      SpaceshipSettingValue::new(SpaceshipSetting::DodgeChance),
     ];
     let settings_right = settings.clone();
 
@@ -91,13 +97,16 @@ impl TextScene<'_> {
       dimensions,
       frame_buffer,
       font_tex_loc,
-      selected_input_array: [SelectedInput::Setting(SpaceshipSetting::Shields), SelectedInput::Setting(SpaceshipSetting::Shields)],
+      selected_input_array: [
+        SelectedInput::Setting(SpaceshipSetting::Shields),
+        SelectedInput::Setting(SpaceshipSetting::Shields),
+      ],
       points_remaining_array: [10, 10],
       setting_points_array: [settings, settings_right],
       nickname_generator,
       player_names: [left_player_name, right_player_name],
       printer: None,
-      appendix: String::new()
+      appendix: String::new(),
     }
   }
 
@@ -109,12 +118,18 @@ impl TextScene<'_> {
   pub fn up(&mut self, player_index: usize) {
     let new_selected: SelectedInput;
     match self.selected_input_array[player_index] {
-      SelectedInput::Setting(setting) => {
-        match setting {
-          SpaceshipSetting::Shields => { new_selected = SelectedInput::Submit; },
-          SpaceshipSetting::Firepower => { new_selected = SelectedInput::Setting(SpaceshipSetting::Shields); },
-          SpaceshipSetting::DefenseThickness => { new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower); },
-          SpaceshipSetting::DodgeChance => { new_selected = SelectedInput::Setting(SpaceshipSetting::DefenseThickness); },
+      SelectedInput::Setting(setting) => match setting {
+        SpaceshipSetting::Shields => {
+          new_selected = SelectedInput::Submit;
+        }
+        SpaceshipSetting::Firepower => {
+          new_selected = SelectedInput::Setting(SpaceshipSetting::Shields);
+        }
+        SpaceshipSetting::DefenseThickness => {
+          new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower);
+        }
+        SpaceshipSetting::DodgeChance => {
+          new_selected = SelectedInput::Setting(SpaceshipSetting::DefenseThickness);
         }
       },
       SelectedInput::Submit => {
@@ -127,12 +142,18 @@ impl TextScene<'_> {
   pub fn down(&mut self, player_index: usize) {
     let new_selected: SelectedInput;
     match self.selected_input_array[player_index] {
-      SelectedInput::Setting(setting) => {
-        match setting {
-          SpaceshipSetting::Shields => { new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower); },
-          SpaceshipSetting::Firepower => { new_selected = SelectedInput::Setting(SpaceshipSetting::DefenseThickness); },
-          SpaceshipSetting::DefenseThickness => { new_selected = SelectedInput::Setting(SpaceshipSetting::DodgeChance); },
-          SpaceshipSetting::DodgeChance => { new_selected = SelectedInput::Submit; },
+      SelectedInput::Setting(setting) => match setting {
+        SpaceshipSetting::Shields => {
+          new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower);
+        }
+        SpaceshipSetting::Firepower => {
+          new_selected = SelectedInput::Setting(SpaceshipSetting::DefenseThickness);
+        }
+        SpaceshipSetting::DefenseThickness => {
+          new_selected = SelectedInput::Setting(SpaceshipSetting::DodgeChance);
+        }
+        SpaceshipSetting::DodgeChance => {
+          new_selected = SelectedInput::Submit;
         }
       },
       SelectedInput::Submit => {
@@ -142,8 +163,7 @@ impl TextScene<'_> {
     self.selected_input_array[player_index] = new_selected;
   }
 
-  fn change_setting(&mut self, setting_index: usize, delta: i32, player_index: usize)
-  {
+  fn change_setting(&mut self, setting_index: usize, delta: i32, player_index: usize) {
     let new_val: i32 = self.setting_points_array[player_index][setting_index].value as i32 + delta;
     let new_remaining = self.points_remaining_array[player_index] as i32 - delta;
     if new_remaining >= 0 && new_remaining <= 10 && new_val >= 0 {
@@ -154,12 +174,18 @@ impl TextScene<'_> {
 
   fn change(&mut self, delta: i32, player_index: usize) {
     match self.selected_input_array[player_index] {
-      SelectedInput::Setting(setting) => {
-        match setting {
-          SpaceshipSetting::Shields => { self.change_setting(0, delta, player_index); },
-          SpaceshipSetting::Firepower => { self.change_setting(1, delta, player_index); },
-          SpaceshipSetting::DefenseThickness => { self.change_setting(2, delta, player_index); },
-          SpaceshipSetting::DodgeChance => { self.change_setting(3, delta, player_index); },
+      SelectedInput::Setting(setting) => match setting {
+        SpaceshipSetting::Shields => {
+          self.change_setting(0, delta, player_index);
+        }
+        SpaceshipSetting::Firepower => {
+          self.change_setting(1, delta, player_index);
+        }
+        SpaceshipSetting::DefenseThickness => {
+          self.change_setting(2, delta, player_index);
+        }
+        SpaceshipSetting::DodgeChance => {
+          self.change_setting(3, delta, player_index);
         }
       },
       SelectedInput::Submit => {
@@ -176,7 +202,8 @@ impl TextScene<'_> {
     self.selected_input_array[player_index] = SelectedInput::Setting(SpaceshipSetting::Shields);
     self.points_remaining_array[player_index] = 10;
     let cloned_settings = self.setting_points_array[player_index].clone();
-    let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[player_index];
+    let setting_points: &mut [SpaceshipSettingValue; 4] =
+      &mut self.setting_points_array[player_index];
     let name_copy = self.player_names[player_index].clone();
     // 1. send to endpoint
     let result: Result<(), _> = post_new_player(name_copy.clone());
@@ -188,10 +215,13 @@ impl TextScene<'_> {
       // 2. send to printer
       printer.print(PlayerSettings {
         nickname: name_copy.clone(),
-        setting_values: cloned_settings
+        setting_values: cloned_settings,
       });
     } else {
-      self.appendix = format!("Could not find printer\nPlease take a picture this screen.\nYour nickname: {}", name_copy.clone());
+      self.appendix = format!(
+        "Could not find printer\nPlease take a picture this screen.\nYour nickname: {}",
+        name_copy.clone()
+      );
     }
 
     // 3. create new nickname
@@ -214,47 +244,21 @@ impl TextScene<'_> {
   }
 
   fn generate_string(&mut self, player_index: usize) -> String {
-    let name: &str = &self.player_names[player_index];
-    let mut lines: Vec<String> = vec![
-      format!("Welcome {}.", name),
-      String::from(""),
-      String::from("Prepare for space invaders!"),
-      String::from("Please input your spaceship settings..."),
-      String::from(""),
-      String::from(format!("Points remaining: {}", self.points_remaining_array[player_index])),
-      String::from(""),
-    ];
-    let setting_points = self.setting_points_array[player_index].clone();
-    for (_i, elem) in setting_points.iter().enumerate() {
-      let setting_name: &str;
-      let points: u32 = elem.value;
-      match elem.setting {
-        SpaceshipSetting::Shields => { setting_name = "  Shields"; },
-        SpaceshipSetting::Firepower => { setting_name = "  Firepower"; },
-        SpaceshipSetting::DefenseThickness => { setting_name = "  DefenseThickness"; },
-        SpaceshipSetting::DodgeChance => { setting_name = "  DodgeChance"; },
-      }
-      let new_line: String = format!("{}: {}", setting_name, points);
-      lines.push(new_line);
-    }
-    lines.push(String::from(" "));
-    lines.push(String::from("  SUBMIT"));
-    match self.selected_input_array[player_index] {
-      SelectedInput::Setting(setting) => {
-        match setting {
-          SpaceshipSetting::Shields => { lines[7] = lines[7].replace("  ", "> "); },
-          SpaceshipSetting::Firepower => { lines[8] = lines[8].replace("  ", "> "); },
-          SpaceshipSetting::DefenseThickness => { lines[9] = lines[9].replace("  ", "> "); },
-          SpaceshipSetting::DodgeChance => { lines[10] = lines[10].replace("  ", "> "); },
-        }
-      },
-      SelectedInput::Submit => {
-        lines[12] = lines[12].replace("  ", "> "); 
-      }
-    }
-    lines.push(String::from(" "));
-    lines.push(self.appendix.clone());
-    lines.join("\n")
+    let player_name: String = self.player_names[player_index].clone();
+    let ship_settings = self.setting_points_array[player_index].clone();
+    let player_remaining_points = self.points_remaining_array[player_index];
+    let selected_input = self.selected_input_array[player_index].clone();
+    let appendix = self.appendix.clone();
+
+    let variables = TextVariables {
+      player_name,
+      ship_settings,
+      player_remaining_points,
+      selected_input,
+      appendix,
+    };
+
+    generate_string(variables)
   }
 
   pub fn update(&mut self, window: &glutin::GlWindow) {
@@ -262,14 +266,14 @@ impl TextScene<'_> {
     let width = self.dimensions.width as f32; // use this if you render to viewport
     let height = self.dimensions.height as _;
     let scale = Scale::uniform((self.font_size * window.get_hidpi_factor() as f32).round());
-    // let scale = rusttype::Scale::uniform(10.0); 
+    // let scale = rusttype::Scale::uniform(10.0);
     let input_string = self.generate_string(0);
     // example @ https://github.com/alexheretic/glyph-brush/blob/master/glyph-brush/examples/opengl.rs
     self.glyph_brush.queue(Section {
       text: &input_string,
       scale,
-      screen_position: (width/20.0, height/10.0),
-      bounds: (width/2.1, height),
+      screen_position: (width / 20.0, height / 10.0),
+      bounds: (width / 2.1, height),
       color: RETRO_COLOR_LEFT,
       ..Section::default()
     });
@@ -278,19 +282,20 @@ impl TextScene<'_> {
     self.glyph_brush.queue(Section {
       text: &input_string_right,
       scale,
-      screen_position: (width - width/20.0, height/10.0),
-      bounds: (width/2.1, height),
+      screen_position: (width - width / 20.0, height / 10.0),
+      bounds: (width / 2.1, height),
       color: RETRO_COLOR_RIGHT,
-      layout: Layout::default()
-        .h_align(HorizontalAlign::Right),
-        //.v_align(VerticalAlign::Bottom),
+      layout: Layout::default().h_align(HorizontalAlign::Right),
+      //.v_align(VerticalAlign::Bottom),
       ..Section::default()
     });
 
     // vvvv handle glyph brush action vvvv
     let mut brush_action;
     loop {
-      unsafe { gl::BindTexture(gl::TEXTURE_2D, self.glyph_texture); }
+      unsafe {
+        gl::BindTexture(gl::TEXTURE_2D, self.glyph_texture);
+      }
       brush_action = self.glyph_brush.process_queued(
         (width as _, height as _),
         |rect, tex_data| unsafe {
@@ -394,31 +399,35 @@ impl Scene for TextScene<'_> {
         let (glyph_width, glyph_height) = self.glyph_brush.texture_dimensions();
         println!("glyph_brush w, h: {}, {}", glyph_width, glyph_height);
         gl::TexImage2D(
-            gl::TEXTURE_2D,
-            0,
-            gl::RED as _,
-            glyph_width as _,
-            glyph_height as _,
-            0,
-            gl::RED,
-            gl::UNSIGNED_BYTE,
-            ptr::null(),
+          gl::TEXTURE_2D,
+          0,
+          gl::RED as _,
+          glyph_width as _,
+          glyph_height as _,
+          0,
+          gl::RED,
+          gl::UNSIGNED_BYTE,
+          ptr::null(),
         );
         self.vao = vao;
         self.vbo = vbo;
         self.glyph_texture = glyph_texture;
         gl_assert_ok!();
       }
-      
+
       // Use shader program
       let program_handle = self.program.handle;
       gl::UseProgram(program_handle);
-      gl::BindFragDataLocation(program_handle, 0, CString::new("out_color").unwrap().as_ptr());
+      gl::BindFragDataLocation(
+        program_handle,
+        0,
+        CString::new("out_color").unwrap().as_ptr(),
+      );
 
       // Specify the layout of the vertex data
       setup_attribs(
-        program_handle, 
-        mem::size_of::<VertexForGlyph>() as _, 
+        program_handle,
+        mem::size_of::<VertexForGlyph>() as _,
         true,
         &[
           ("left_top", 3),
@@ -426,8 +435,9 @@ impl Scene for TextScene<'_> {
           ("tex_left_top", 2),
           ("tex_right_bottom", 2),
           ("color", 4),
-        ]
-      ).unwrap();
+        ],
+      )
+      .unwrap();
 
       // Enabled alpha blending
       gl::Enable(gl::BLEND);
@@ -441,8 +451,11 @@ impl Scene for TextScene<'_> {
 
   unsafe fn draw(&self) {
     let program_handle = self.program.handle;
-    if let Some(frame_buffer) = self.frame_buffer { frame_buffer.bind(); }
-    else { gl::BindFramebuffer(gl::FRAMEBUFFER, 0); }
+    if let Some(frame_buffer) = self.frame_buffer {
+      frame_buffer.bind();
+    } else {
+      gl::BindFramebuffer(gl::FRAMEBUFFER, 0);
+    }
     gl::ClearColor(0.02, 0.02, 0.02, 1.0);
     gl::Clear(gl::COLOR_BUFFER_BIT);
     gl::UseProgram(program_handle);
@@ -458,7 +471,9 @@ impl Scene for TextScene<'_> {
       gl::DeleteBuffers(1, &self.vbo);
       gl::DeleteVertexArrays(1, &self.vao);
       gl::DeleteTextures(1, &self.glyph_texture);
-      if let Some(frame_buffer) = self.frame_buffer { frame_buffer.cleanup(); }
+      if let Some(frame_buffer) = self.frame_buffer {
+        frame_buffer.cleanup();
+      }
     }
   }
 }

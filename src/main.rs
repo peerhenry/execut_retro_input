@@ -2,12 +2,12 @@
 //! bloom https://learnopengl.com/Advanced-Lighting/Bloom
 
 use gl::types::GLsizei;
-use glutin::{GlWindow};
-use spin_sleep::LoopHelper;
+use glutin::GlWindow;
 use hostname::get_hostname;
+use spin_sleep::LoopHelper;
 
-mod shader_compiler;
 mod gl_buffers;
+mod shader_compiler;
 #[macro_use]
 mod gl_error_handler;
 mod helpers_for_glyph;
@@ -29,9 +29,9 @@ mod printer;
 use printer::*;
 mod nickname_generator;
 use nickname_generator::*;
+mod execut_http_client;
 mod spaceship_settings;
-mod execut_api;
-use execut_api::*;
+use execut_http_client::*;
 
 // SOME COLORS
 // [164.0/255.0, 252.0/255.0, 212.0/255.0, 255.0]; // very light teal
@@ -39,9 +39,9 @@ use execut_api::*;
 // [200.0/255.0, 22.0/255.0, 2.0/255.0, 255.0]; // reddish
 // [47.0/255.0, 218.0/255.0, 176.0/255.0, 255.0]; // a bit more colorful greenish
 
-pub const OS_COLOR: [f32; 4] = [200.0/255.0, 200.0/255.0, 200.0/255.0, 255.0]; // a bit more colorful greenish
-pub const RETRO_COLOR_LEFT: [f32; 4] = [47.0/255.0, 218.0/255.0, 176.0/255.0, 255.0]; // a bit more colorful greenish
-pub const RETRO_COLOR_RIGHT: [f32; 4] = [200.0/255.0, 22.0/255.0, 2.0/255.0, 255.0]; // reddish
+pub const OS_COLOR: [f32; 4] = [200.0 / 255.0, 200.0 / 255.0, 200.0 / 255.0, 255.0]; // a bit more colorful greenish
+pub const RETRO_COLOR_LEFT: [f32; 4] = [47.0 / 255.0, 218.0 / 255.0, 176.0 / 255.0, 255.0]; // a bit more colorful greenish
+pub const RETRO_COLOR_RIGHT: [f32; 4] = [200.0 / 255.0, 22.0 / 255.0, 2.0 / 255.0, 255.0]; // reddish
 
 pub type Res<T> = Result<T, Box<std::error::Error>>;
 
@@ -54,28 +54,39 @@ fn main() -> Res<()> {
   let text_frame_buffer = Framebuffer::new(gl::TEXTURE0, f_width, f_height);
   let text_texture = text_frame_buffer.tex_handle;
   let text_fbo_texture_number = text_frame_buffer.texture_number;
-  let taken_nicknames = fetch_taken_nicknames()?;
-  let nickname_generator = NicknameGenerator::new(include_str!("../assets/adjectives.txt"), include_str!("../assets/nouns.txt"), taken_nicknames);
+  let taken_nicknames_result = fetch_taken_nicknames();
+  let taken_nicknames: Vec<String> = match taken_nicknames_result {
+    Err(error) => {
+      eprintln!("Error while fetching nicknames: {}", error);
+      vec![]
+    }
+    Ok(thing) => thing,
+  };
+  let nickname_generator = NicknameGenerator::new(
+    include_str!("../assets/adjectives.txt"),
+    include_str!("../assets/nouns.txt"),
+    taken_nicknames,
+  );
 
   // generating other framebuffers in noisescene somehow interferes with text_scene; it renders semi-transparant quads instead of glyphs
   let mut retrofy_scene = RetrofyScene::new(
-    include_str!("shader/retrofy.vert.glsl"), 
-    include_str!("shader/retrofy.frag.glsl"), 
-    text_texture, 
-    text_fbo_texture_number
+    include_str!("shader/retrofy.vert.glsl"),
+    include_str!("shader/retrofy.frag.glsl"),
+    text_texture,
+    text_fbo_texture_number,
   );
   retrofy_scene.init();
 
   let mut text_scene = TextScene::new(
-    include_str!("shader/text.vert.glsl"), 
-    include_str!("shader/text.frag.glsl"), 
+    include_str!("shader/text.vert.glsl"),
+    include_str!("shader/text.frag.glsl"),
     &window,
     Some(text_frame_buffer),
     nickname_generator,
   );
 
-  let host_name = get_hostname().expect("yoyoyo");
-  println!("{}", host_name);
+  let host_name = get_hostname().expect("Could not get host name");
+  println!("host name: {}", host_name);
   let printer_address = format!("\\\\{}\\EPSON", host_name);
   let printer = Printer::new(&printer_address);
   text_scene.printer = Some(printer);
@@ -86,7 +97,8 @@ fn main() -> Res<()> {
   // RUN
   while running {
     loop_helper.loop_start();
-    { // active input state
+    {
+      // active input state
       handle_events(&mut events, &mut running, &window, &mut text_scene)?;
       retrofy_scene.update();
       text_scene.update(&window);

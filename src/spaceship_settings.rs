@@ -6,6 +6,9 @@ pub enum SpaceshipSetting {
   DodgeChance
 }
 
+// todo:
+// DefenseWidth
+
 impl Default for SpaceshipSetting {
   fn default() -> Self { SpaceshipSetting::Shields }
 }

@@ -152,6 +152,7 @@ impl TextScene<'_> {
     let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[player_index];
     let name_copy = self.player_names[player_index].clone();
     // 1. send to endpoint
+    // todo: send settings
     let result: Result<(), _> = post_new_player(name_copy.clone());
     if let Err(_) = result {
       self.appendix = String::from("API error: Try again later");

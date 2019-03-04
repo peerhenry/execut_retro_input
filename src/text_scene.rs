@@ -1,6 +1,7 @@
 pub mod text_scene_text;
 pub mod cost_calculator;
 pub mod selected_input;
+use crate::text_scene::cost_calculator::calculate_cost;
 use self::text_scene_text::{generate_string, TextVariables};
 use self::selected_input::*;
 use crate::execut_http_client::*;
@@ -117,8 +118,11 @@ impl TextScene<'_> {
   }
 
   fn change_setting(&mut self, setting_index: usize, delta: i32, player_index: usize) {
-    let new_val: i32 = self.setting_points_array[player_index][setting_index].value as i32 + delta;
-    let new_remaining = self.points_remaining_array[player_index] as i32 - delta;
+    let current_setting_val = self.setting_points_array[player_index][setting_index];
+    // if delta = 1, calculate cost for next thing
+    let new_val: i32 = current_setting_val.value as i32 + delta;
+    let cost = calculate_cost(&current_setting_val, delta);
+    let new_remaining = self.points_remaining_array[player_index] as i32 - cost;
     if new_remaining >= 0 && new_remaining <= 10 && new_val >= 0 {
       self.setting_points_array[player_index][setting_index].value = new_val as u32;
       self.points_remaining_array[player_index] = new_remaining as u32;
@@ -128,8 +132,8 @@ impl TextScene<'_> {
   fn change(&mut self, delta: i32, player_index: usize) {
     match self.selected_input_array[player_index] {
       SelectedInput::Setting(setting) => {
-        let setting_index = setting.to_index();
-        self.change_setting(setting_index, delta, player_index);
+        let selected_index = setting.to_index();
+        self.change_setting(selected_index, delta, player_index);
       },
       SelectedInput::Submit => {
         self.submit(player_index);
@@ -138,8 +142,6 @@ impl TextScene<'_> {
   }
 
   fn submit(&mut self, player_index: usize) {
-    // todo: let cost = self.setting_points_array[player_index][]
-
     if self.points_remaining_array[player_index] > 0 {
       // maybe show a message that all points must be distributed?
       return;
@@ -147,8 +149,7 @@ impl TextScene<'_> {
     self.selected_input_array[player_index] = SelectedInput::Setting(SpaceshipSetting::Shields);
     self.points_remaining_array[player_index] = 10;
     let cloned_settings = self.setting_points_array[player_index].clone();
-    let setting_points: &mut [SpaceshipSettingValue; 4] =
-      &mut self.setting_points_array[player_index];
+    let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[player_index];
     let name_copy = self.player_names[player_index].clone();
     // 1. send to endpoint
     let result: Result<(), _> = post_new_player(name_copy.clone());

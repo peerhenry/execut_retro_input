@@ -1,4 +1,4 @@
-use crate::spaceship_settings::{SpaceshipSetting, SpaceshipSettingValue};
+use crate::spaceship_settings::{SpaceshipSettingValue};
 use crate::text_scene::SelectedInput;
 use crate::text_scene::cost_calculator::*;
 
@@ -28,8 +28,8 @@ pub fn generate_string(variables: TextVariables) -> String {
   for (_i, elem) in setting_points.iter().enumerate() {
     let setting_name: &str = elem.setting.name();
     let points: u32 = elem.value;
-    let cost: u32 = calculate_cost(&elem);
-    let new_line: String = format!("  {}: {} (cost: {} pts)", setting_name, points, cost);
+    let cost: u32 = calculate_cost(&elem, 1) as u32;
+    let new_line: String = format!("  {}: {} ---- (cost: {} pts)", setting_name, points, cost);
     lines.push(new_line);
   }
   lines.push(String::from(" "));

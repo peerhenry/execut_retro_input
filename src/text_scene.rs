@@ -30,6 +30,36 @@ impl Default for SelectedInput {
   }
 }
 
+impl SelectedInput {
+  pub fn to_index(&self) -> usize {
+    match self {
+      SelectedInput::Setting(setting) => setting.to_index(),
+      SelectedInput::Submit => 4,
+    }
+  }
+
+  pub fn from_index(index: usize) -> Self {
+    let output = match index {
+      0...3 => SelectedInput::Setting(SpaceshipSetting::from_index(index)),
+      _ => SelectedInput::Submit
+    };
+    output
+  }
+
+  pub fn next(&self) -> Self {
+    let next_index: usize = self.to_index() + 1 % 5;
+    Self::from_index(next_index)
+  }
+
+  pub fn prev(&self) -> Self {
+    let mut prev_index: usize = self.to_index() - 1;
+    if prev_index < 0 {
+      prev_index = prev_index + 5;
+    }
+    Self::from_index(prev_index)
+  }
+}
+
 pub struct TextScene<'a> {
   program: ShaderProgram,
   vbo: GLuint,
@@ -76,10 +106,10 @@ impl TextScene<'_> {
         gl::GetUniformLocation(program.handle, CString::new("baseRand").unwrap().as_ptr());
     }
     let settings: [SpaceshipSettingValue; 4] = [
-      SpaceshipSettingValue::new(SpaceshipSetting::Shields),
-      SpaceshipSettingValue::new(SpaceshipSetting::Firepower),
-      SpaceshipSettingValue::new(SpaceshipSetting::DefenseThickness),
-      SpaceshipSettingValue::new(SpaceshipSetting::DodgeChance),
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(0)),
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(1)),
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(2)),
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(3)),
     ];
     let settings_right = settings.clone();
 
@@ -99,8 +129,8 @@ impl TextScene<'_> {
       frame_buffer,
       font_tex_loc,
       selected_input_array: [
-        SelectedInput::Setting(SpaceshipSetting::Shields),
-        SelectedInput::Setting(SpaceshipSetting::Shields),
+        SelectedInput::from_index(0),
+        SelectedInput::from_index(0),
       ],
       points_remaining_array: [10, 10],
       setting_points_array: [settings, settings_right],
@@ -117,51 +147,13 @@ impl TextScene<'_> {
   }
 
   pub fn up(&mut self, player_index: usize) {
-    let new_selected: SelectedInput;
-    match self.selected_input_array[player_index] {
-      SelectedInput::Setting(setting) => match setting {
-        SpaceshipSetting::Shields => {
-          new_selected = SelectedInput::Submit;
-        }
-        SpaceshipSetting::Firepower => {
-          new_selected = SelectedInput::Setting(SpaceshipSetting::Shields);
-        }
-        SpaceshipSetting::DefenseThickness => {
-          new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower);
-        }
-        SpaceshipSetting::DodgeChance => {
-          new_selected = SelectedInput::Setting(SpaceshipSetting::DefenseThickness);
-        }
-      },
-      SelectedInput::Submit => {
-        new_selected = SelectedInput::Setting(SpaceshipSetting::DodgeChance);
-      }
-    }
-    self.selected_input_array[player_index] = new_selected;
+    let selected = self.selected_input_array[player_index];
+    self.selected_input_array[player_index] = selected.prev();
   }
 
   pub fn down(&mut self, player_index: usize) {
-    let new_selected: SelectedInput;
-    match self.selected_input_array[player_index] {
-      SelectedInput::Setting(setting) => match setting {
-        SpaceshipSetting::Shields => {
-          new_selected = SelectedInput::Setting(SpaceshipSetting::Firepower);
-        }
-        SpaceshipSetting::Firepower => {
-          new_selected = SelectedInput::Setting(SpaceshipSetting::DefenseThickness);
-        }
-        SpaceshipSetting::DefenseThickness => {
-          new_selected = SelectedInput::Setting(SpaceshipSetting::DodgeChance);
-        }
-        SpaceshipSetting::DodgeChance => {
-          new_selected = SelectedInput::Submit;
-        }
-      },
-      SelectedInput::Submit => {
-        new_selected = SelectedInput::Setting(SpaceshipSetting::Shields);
-      }
-    }
-    self.selected_input_array[player_index] = new_selected;
+    let selected = self.selected_input_array[player_index];
+    self.selected_input_array[player_index] = selected.next();
   }
 
   fn change_setting(&mut self, setting_index: usize, delta: i32, player_index: usize) {

@@ -1,6 +1,8 @@
 pub mod text_scene_text;
 pub mod cost_calculator;
+pub mod selected_input;
 use self::text_scene_text::{generate_string, TextVariables};
+use self::selected_input::*;
 use crate::execut_http_client::*;
 use crate::frame_buffer::*;
 use crate::gl_buffers::*;
@@ -17,48 +19,6 @@ use gl::types::*;
 use glutin::dpi::PhysicalSize;
 use glyph_brush::{rusttype::*, *};
 use std::{ffi::CString, mem, ptr};
-
-#[derive(Copy, Clone)]
-pub enum SelectedInput {
-  Setting(SpaceshipSetting),
-  Submit,
-}
-
-impl Default for SelectedInput {
-  fn default() -> Self {
-    SelectedInput::Setting(SpaceshipSetting::default())
-  }
-}
-
-impl SelectedInput {
-  pub fn to_index(&self) -> usize {
-    match self {
-      SelectedInput::Setting(setting) => setting.to_index(),
-      SelectedInput::Submit => 4,
-    }
-  }
-
-  pub fn from_index(index: usize) -> Self {
-    let output = match index {
-      0...3 => SelectedInput::Setting(SpaceshipSetting::from_index(index)),
-      _ => SelectedInput::Submit
-    };
-    output
-  }
-
-  pub fn next(&self) -> Self {
-    let next_index: usize = self.to_index() + 1 % 5;
-    Self::from_index(next_index)
-  }
-
-  pub fn prev(&self) -> Self {
-    let mut prev_index: usize = self.to_index() - 1;
-    if prev_index < 0 {
-      prev_index = prev_index + 5;
-    }
-    Self::from_index(prev_index)
-  }
-}
 
 pub struct TextScene<'a> {
   program: ShaderProgram,
@@ -167,19 +127,9 @@ impl TextScene<'_> {
 
   fn change(&mut self, delta: i32, player_index: usize) {
     match self.selected_input_array[player_index] {
-      SelectedInput::Setting(setting) => match setting {
-        SpaceshipSetting::Shields => {
-          self.change_setting(0, delta, player_index);
-        }
-        SpaceshipSetting::Firepower => {
-          self.change_setting(1, delta, player_index);
-        }
-        SpaceshipSetting::DefenseThickness => {
-          self.change_setting(2, delta, player_index);
-        }
-        SpaceshipSetting::DodgeChance => {
-          self.change_setting(3, delta, player_index);
-        }
+      SelectedInput::Setting(setting) => {
+        let setting_index = setting.to_index();
+        self.change_setting(setting_index, delta, player_index);
       },
       SelectedInput::Submit => {
         self.submit(player_index);
@@ -244,7 +194,6 @@ impl TextScene<'_> {
     let player_remaining_points = self.points_remaining_array[player_index];
     let selected_input = self.selected_input_array[player_index].clone();
     let appendix = self.appendix.clone();
-
     let variables = TextVariables {
       player_name,
       ship_settings,
@@ -252,7 +201,6 @@ impl TextScene<'_> {
       selected_input,
       appendix,
     };
-
     generate_string(variables)
   }
 
@@ -281,7 +229,6 @@ impl TextScene<'_> {
       bounds: (width / 2.1, height),
       color: RETRO_COLOR_RIGHT,
       layout: Layout::default().h_align(HorizontalAlign::Right),
-      //.v_align(VerticalAlign::Bottom),
       ..Section::default()
     });
 

@@ -33,6 +33,15 @@ impl SpaceshipSetting {
   pub fn count() -> usize {
     return 4;
   }
+
+  pub fn name(&self) -> &str {
+    match self {
+      SpaceshipSetting::Shields => "Shields",
+      SpaceshipSetting::Firepower => "Firepower",
+      SpaceshipSetting::DefenseThickness => "DefenseThickness",
+      SpaceshipSetting::DodgeChance => "DodgeChance",
+    }
+  }
 }
 
 #[derive(Clone, Copy, Default)]
@@ -46,6 +55,25 @@ impl SpaceshipSettingValue {
     SpaceshipSettingValue {
       setting,
       value: 0
+    }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn test_count() {
+    assert_eq!(4, SpaceshipSetting::count());
+  }
+
+  #[test]
+  fn assert_from_to_index() {
+    for i in 0..4 {
+      let thing = SpaceshipSetting::from_index(i);
+      let res = thing.to_index();
+      assert_eq!(i, res);
     }
   }
 }

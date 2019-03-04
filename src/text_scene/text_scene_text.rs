@@ -1,5 +1,6 @@
 use crate::spaceship_settings::{SpaceshipSetting, SpaceshipSettingValue};
 use crate::text_scene::SelectedInput;
+use crate::text_scene::cost_calculator::*;
 
 pub struct TextVariables {
   pub player_name: String,
@@ -27,6 +28,7 @@ pub fn generate_string(variables: TextVariables) -> String {
   for (_i, elem) in setting_points.iter().enumerate() {
     let setting_name: &str;
     let points: u32 = elem.value;
+    let cost: u32 = calculate_cost(&elem);
     match elem.setting {
       SpaceshipSetting::Shields => {
         setting_name = "  Shields";
@@ -41,7 +43,7 @@ pub fn generate_string(variables: TextVariables) -> String {
         setting_name = "  DodgeChance";
       }
     }
-    let new_line: String = format!("{}: {}", setting_name, points);
+    let new_line: String = format!("{}: {} (cost: {} pts)", setting_name, points, cost);
     lines.push(new_line);
   }
   lines.push(String::from(" "));

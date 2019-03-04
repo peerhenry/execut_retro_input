@@ -1,4 +1,5 @@
 pub mod text_scene_text;
+pub mod cost_calculator;
 use self::text_scene_text::{generate_string, TextVariables};
 use crate::execut_http_client::*;
 use crate::frame_buffer::*;
@@ -195,6 +196,8 @@ impl TextScene<'_> {
   }
 
   fn submit(&mut self, player_index: usize) {
+    // todo: let cost = self.setting_points_array[player_index][]
+
     if self.points_remaining_array[player_index] > 0 {
       // maybe show a message that all points must be distributed?
       return;

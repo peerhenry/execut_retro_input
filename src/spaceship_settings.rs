@@ -2,12 +2,12 @@
 pub enum SpaceshipSetting {
   Shields,
   Firepower,
+  DodgeChance,
   DefenseThickness,
-  DodgeChance
+  DefenseWidth
 }
 
-// todo:
-// DefenseWidth
+pub const SETTING_COUNT: usize = 5;
 
 impl Default for SpaceshipSetting {
   fn default() -> Self { SpaceshipSetting::Shields }
@@ -18,8 +18,9 @@ impl SpaceshipSetting {
     let output = match index {
       0 => SpaceshipSetting::Shields,
       1 => SpaceshipSetting::Firepower,
-      2 => SpaceshipSetting::DefenseThickness,
-      _ => SpaceshipSetting::DodgeChance
+      2 => SpaceshipSetting::DodgeChance,
+      3 => SpaceshipSetting::DefenseThickness,
+      _ => SpaceshipSetting::DefenseWidth,
     };
     output
   }
@@ -28,21 +29,23 @@ impl SpaceshipSetting {
     match self {
       SpaceshipSetting::Shields => 0,
       SpaceshipSetting::Firepower => 1,
-      SpaceshipSetting::DefenseThickness => 2,
-      SpaceshipSetting::DodgeChance => 3,
+      SpaceshipSetting::DodgeChance => 2,
+      SpaceshipSetting::DefenseThickness => 3,
+      SpaceshipSetting::DefenseWidth => 4,
     }
   }
 
   pub fn count() -> usize {
-    return 4;
+    return SETTING_COUNT;
   }
 
   pub fn name(&self) -> &str {
     match self {
-      SpaceshipSetting::Shields => "Shields",
-      SpaceshipSetting::Firepower => "Firepower",
-      SpaceshipSetting::DefenseThickness => "DefenseThickness",
-      SpaceshipSetting::DodgeChance => "DodgeChance",
+      SpaceshipSetting::Shields => "SHIELDS",
+      SpaceshipSetting::Firepower => "FIREPOWER",
+      SpaceshipSetting::DodgeChance => "DODGE CHANGE",
+      SpaceshipSetting::DefenseThickness => "DEFENSE THICKNESS",
+      SpaceshipSetting::DefenseWidth => "DEFENSE WIDTH",
     }
   }
 }
@@ -68,12 +71,12 @@ mod tests {
 
   #[test]
   fn test_count() {
-    assert_eq!(4, SpaceshipSetting::count());
+    assert_eq!(SETTING_COUNT, SpaceshipSetting::count());
   }
 
   #[test]
   fn assert_from_to_index() {
-    for i in 0..4 {
+    for i in 0..SETTING_COUNT {
       let thing = SpaceshipSetting::from_index(i);
       let res = thing.to_index();
       assert_eq!(i, res);

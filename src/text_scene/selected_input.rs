@@ -1,4 +1,4 @@
-use crate::spaceship_settings::SpaceshipSetting;
+use crate::spaceship_settings::{SETTING_COUNT, SpaceshipSetting};
 
 #[derive(Copy, Clone)]
 pub enum SelectedInput {
@@ -22,7 +22,7 @@ impl SelectedInput {
 
   pub fn from_index(index: usize) -> Self {
     let output = match index {
-      0...3 => SelectedInput::Setting(SpaceshipSetting::from_index(index)),
+      0...4 => SelectedInput::Setting(SpaceshipSetting::from_index(index)),
       _ => SelectedInput::Submit
     };
     output
@@ -65,7 +65,8 @@ mod tests {
 
   #[test]
   fn assert_last_next() {
-    let thing = SelectedInput::from_index(4).next();
+    let last_index = SpaceshipSetting::count();
+    let thing = SelectedInput::from_index(last_index).next();
     let res = thing.to_index();
     assert_eq!(0, res);
   }

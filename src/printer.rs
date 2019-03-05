@@ -4,7 +4,7 @@ use crate::spaceship_settings::*;
 
 pub struct PlayerSettings {
   pub nickname: String,
-  pub setting_values: [SpaceshipSettingValue; 4]
+  pub setting_values: [SpaceshipSettingValue; SETTING_COUNT]
 }
 
 pub struct Printer {

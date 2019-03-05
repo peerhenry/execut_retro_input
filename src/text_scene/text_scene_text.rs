@@ -1,11 +1,11 @@
-use crate::spaceship_settings::{SpaceshipSettingValue};
+use crate::spaceship_settings::{SETTING_COUNT, SpaceshipSettingValue};
 use crate::text_scene::SelectedInput;
 use crate::text_scene::cost_calculator::*;
 
 pub struct TextVariables {
   pub player_name: String,
   pub player_remaining_points: u32,
-  pub ship_settings: [SpaceshipSettingValue; 4],
+  pub ship_settings: [SpaceshipSettingValue; SETTING_COUNT],
   pub selected_input: SelectedInput,
   pub appendix: String,
 }

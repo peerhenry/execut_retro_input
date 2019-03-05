@@ -35,7 +35,7 @@ pub struct TextScene<'a> {
   font_tex_loc: GLint,
   selected_input_array: [SelectedInput; 2],
   points_remaining_array: [u32; 2],
-  setting_points_array: [[SpaceshipSettingValue; 4]; 2],
+  setting_points_array: [[SpaceshipSettingValue; SETTING_COUNT]; 2],
   player_names: [String; 2],
   nickname_generator: NicknameGenerator,
   pub printer: Option<Printer>,
@@ -66,11 +66,12 @@ impl TextScene<'_> {
       font_tex_loc =
         gl::GetUniformLocation(program.handle, CString::new("baseRand").unwrap().as_ptr());
     }
-    let settings: [SpaceshipSettingValue; 4] = [
+    let settings: [SpaceshipSettingValue; SETTING_COUNT] = [
       SpaceshipSettingValue::new(SpaceshipSetting::from_index(0)),
       SpaceshipSettingValue::new(SpaceshipSetting::from_index(1)),
       SpaceshipSettingValue::new(SpaceshipSetting::from_index(2)),
       SpaceshipSettingValue::new(SpaceshipSetting::from_index(3)),
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(4))
     ];
     let settings_right = settings.clone();
 
@@ -149,7 +150,7 @@ impl TextScene<'_> {
     self.selected_input_array[player_index] = SelectedInput::Setting(SpaceshipSetting::Shields);
     self.points_remaining_array[player_index] = 10;
     let cloned_settings = self.setting_points_array[player_index].clone();
-    let setting_points: &mut [SpaceshipSettingValue; 4] = &mut self.setting_points_array[player_index];
+    let setting_points: &mut [SpaceshipSettingValue; SETTING_COUNT] = &mut self.setting_points_array[player_index];
     let name_copy = self.player_names[player_index].clone();
     // 1. send to endpoint
     // todo: send settings

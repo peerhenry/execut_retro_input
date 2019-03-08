@@ -1,3 +1,4 @@
+use crate::spaceship_settings::*;
 use std::collections::HashMap;
 
 const ADDRESS: &str = "http://localhost:4444/";
@@ -14,9 +15,25 @@ pub fn fetch_taken_nicknames() -> Result<Vec<String>, Box<std::error::Error>> {
   Ok(deserialized)
 }
 
-pub fn post_new_player(nickname: String) -> Result<(), Box<std::error::Error>> {
+fn setting_to_key(setting: SpaceshipSetting) -> String {
+  let key = format!("settings_{}", setting.name());
+  key
+}
+
+fn to_map(nickname: String, settings: [SpaceshipSettingValue; SETTING_COUNT]) -> HashMap<String, String> {
   let mut map = HashMap::new();
-  map.insert("nickname", &nickname);
+  map.insert("nickname".to_string(), nickname);
+  let mut i = settings.len();
+  while i > 0 {
+    i = i - 1;
+    let key = setting_to_key(settings[i].setting);
+    map.insert(key, settings[i].value.to_string());
+  }
+  map
+}
+
+pub fn post_new_player(nickname: String, settings: [SpaceshipSettingValue; SETTING_COUNT]) -> Result<(), Box<std::error::Error>> {
+  let map = to_map(nickname, settings);
   let endpoint = get_endpoint("new-player");
   let client = reqwest::Client::new();
   client.post(&endpoint).json(&map).send()?;
@@ -25,10 +42,45 @@ pub fn post_new_player(nickname: String) -> Result<(), Box<std::error::Error>> {
 
 #[cfg(test)]
 mod tests {
+  use super::*;
+
   #[test]
   fn test_string_deserialization() {
     let deserialized: Vec<String> = serde_json::from_str("[\"piet\", \"klaas\"]").unwrap();
     let expected: Vec<String> = vec![String::from("piet"), String::from("klaas")];
     assert_eq!(expected, deserialized);
+  }
+
+  fn get_dummy_spaceship_setting_values() -> [SpaceshipSettingValue; SETTING_COUNT] {
+    let thing = [
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(0)),
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(1)),
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(2)),
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(3)),
+      SpaceshipSettingValue::new(SpaceshipSetting::from_index(4)),
+    ];
+    return thing
+  }
+
+  #[test]
+  fn test_to_map() {
+    let nickname: String = "pietje".to_string();
+    let settings: [SpaceshipSettingValue; SETTING_COUNT] = get_dummy_spaceship_setting_values();
+    // act
+    let map = to_map(nickname, settings);
+    // assert
+    assert!(map.contains_key("nickname"));
+    let key = setting_to_key(SpaceshipSetting::from_index(2));
+    assert!(map.contains_key(&key));
+  }
+
+  #[test]
+  fn test_setting_to_key() {
+    let setting = SpaceshipSetting::from_index(2);
+    let expected = format!("settings_{}", setting.name());
+    // act
+    let key = setting_to_key(setting);
+    // assert
+    assert_eq!(expected, key);
   }
 }

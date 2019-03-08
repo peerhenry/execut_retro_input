@@ -43,9 +43,9 @@ impl SpaceshipSetting {
     match self {
       SpaceshipSetting::Shields => "SHIELDS",
       SpaceshipSetting::Firepower => "FIREPOWER",
-      SpaceshipSetting::DodgeChance => "DODGE CHANGE",
-      SpaceshipSetting::DefenseThickness => "DEFENSE THICKNESS",
-      SpaceshipSetting::DefenseWidth => "DEFENSE WIDTH",
+      SpaceshipSetting::DodgeChance => "DODGE_CHANGE",
+      SpaceshipSetting::DefenseThickness => "DEFENSE_THICKNESS",
+      SpaceshipSetting::DefenseWidth => "DEFENSE_WIDTH",
     }
   }
 }

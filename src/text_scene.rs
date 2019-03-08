@@ -154,7 +154,7 @@ impl TextScene<'_> {
     let name_copy = self.player_names[player_index].clone();
     // 1. send to endpoint
     // todo: send settings
-    let result: Result<(), _> = post_new_player(name_copy.clone());
+    let result: Result<(), _> = post_new_player(name_copy.clone(), setting_points.clone());
     if let Err(_) = result {
       self.appendix = String::from("API error: Try again later");
       return;

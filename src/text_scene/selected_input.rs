@@ -47,7 +47,7 @@ mod tests {
 
   #[test]
   fn assert_from_to_index() {
-    for i in 0..5 {
+    for i in 0..SETTING_COUNT {
       let thing = SelectedInput::from_index(i);
       let res = thing.to_index();
       assert_eq!(i, res);
@@ -60,6 +60,16 @@ mod tests {
       let thing = SelectedInput::from_index(i).next();
       let res = thing.to_index();
       assert_eq!(i+1, res);
+    }
+  }
+
+  #[test]
+  fn assert_last_index() {
+    let last_index = SpaceshipSetting::count();
+    let last_input = SelectedInput::from_index(last_index);
+    match last_input {
+      SelectedInput::Submit => { assert!(true) },
+      _ => assert!(false, "last input was not submit!")
     }
   }
 

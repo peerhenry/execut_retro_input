@@ -40,7 +40,8 @@ pub fn generate_string(variables: TextVariables) -> String {
       lines[7 + offest] = lines[7 + offest].replace("  ", "> ");
     },
     SelectedInput::Submit => {
-      lines[12] = lines[12].replace("  ", "> ");
+      let submit_line_nr: usize = 7 + SETTING_COUNT + 1;
+      lines[submit_line_nr] = lines[submit_line_nr].replace("  ", "> ");
     }
   }
   lines.push(String::from(" "));

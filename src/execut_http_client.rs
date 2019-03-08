@@ -1,10 +1,16 @@
+use std::fs;
 use crate::spaceship_settings::*;
 use std::collections::HashMap;
 
-const ADDRESS: &str = "http://localhost:4444/";
+// const ADDRESS: &str = "http://localhost:4444/";
+
+fn get_address() -> String {
+  // return ADDRESS
+  fs::read_to_string("backend_address.txt").unwrap()
+}
 
 fn get_endpoint(endpoint: &str) -> String {
-  format!("{}{}", ADDRESS, endpoint)
+  format!("{}{}", get_address(), endpoint)
 }
 
 pub fn fetch_taken_nicknames() -> Result<Vec<String>, Box<std::error::Error>> {
@@ -74,7 +80,7 @@ mod tests {
     }
   }
 
-    #[test]
+  #[test]
   fn test_to_map() {
     let nickname: String = "pietje".to_string();
     let settings: [SpaceshipSettingValue; SETTING_COUNT] = get_dummy_spaceship_setting_values();
@@ -95,4 +101,12 @@ mod tests {
       }
     }
   }
+
+  /* sanity
+  #[test]
+  fn test_address() {
+    let address = get_address();
+    assert_eq!("http://localhost:4444/", address);
+  }
+  */
 }

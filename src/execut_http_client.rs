@@ -63,6 +63,18 @@ mod tests {
   }
 
   #[test]
+  fn test_setting_to_key() {
+    for i in 0..SETTING_COUNT {
+      let setting = SpaceshipSetting::from_index(i);
+      let expected = format!("settings_{}", setting.name());
+      // act
+      let key = setting_to_key(setting);
+      // assert
+      assert_eq!(expected, key);
+    }
+  }
+
+    #[test]
   fn test_to_map() {
     let nickname: String = "pietje".to_string();
     let settings: [SpaceshipSettingValue; SETTING_COUNT] = get_dummy_spaceship_setting_values();
@@ -70,17 +82,17 @@ mod tests {
     let map = to_map(nickname, settings);
     // assert
     assert!(map.contains_key("nickname"));
-    let key = setting_to_key(SpaceshipSetting::from_index(2));
-    assert!(map.contains_key(&key));
-  }
-
-  #[test]
-  fn test_setting_to_key() {
-    let setting = SpaceshipSetting::from_index(2);
-    let expected = format!("settings_{}", setting.name());
-    // act
-    let key = setting_to_key(setting);
-    // assert
-    assert_eq!(expected, key);
+    match map.get("nickname") {
+      Some(nickname) => assert_eq!("pietje", nickname),
+      None => assert!(false, "could not get nickname from map")
+    }
+    for i in 0..SETTING_COUNT {
+      let key = setting_to_key(SpaceshipSetting::from_index(i));
+      assert!(map.contains_key(&key), "map did not contain key {}", key);
+      match map.get(&key) {
+        Some(value) => assert_eq!("0", value),
+        None => assert!(false, "could not get value from map")
+      }
+    }
   }
 }

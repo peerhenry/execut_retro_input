@@ -26,7 +26,7 @@ pub fn init_context(title: &str) -> Res<(GlWindow, EventsLoop)> {
           .with_title(title),
       glutin::ContextBuilder::new()
           .with_gl_profile(GlProfile::Core)
-          .with_gl(GlRequest::Specific(Api::OpenGl, (4, 5))) // was 3.2
+          .with_gl(GlRequest::Specific(Api::OpenGl, (4, 0))) // was 3.2
           .with_srgb(true),
       &events,
   )?;

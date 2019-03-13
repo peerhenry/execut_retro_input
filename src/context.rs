@@ -4,7 +4,6 @@ use glutin::{EventsLoop, Api, GlContext, GlProfile, GlRequest, GlWindow, Monitor
 use super::Res;
 
 pub fn init_context(title: &str) -> Res<(GlWindow, EventsLoop)> {
-  env_logger::init();
   if cfg!(target_os = "linux") {
       // winit wayland is currently still wip
       if env::var("WINIT_UNIX_BACKEND").is_err() {

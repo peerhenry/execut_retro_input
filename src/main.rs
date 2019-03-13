@@ -32,6 +32,8 @@ use nickname_generator::*;
 mod execut_http_client;
 mod spaceship_settings;
 use execut_http_client::*;
+mod sound_player;
+use sound_player::SoundPlayer;
 
 // SOME COLORS
 // [164.0/255.0, 252.0/255.0, 212.0/255.0, 255.0]; // very light teal
@@ -92,6 +94,7 @@ fn main() -> Res<()> {
   text_scene.printer = Some(printer);
   text_scene.init();
 
+  let mut sound_player = SoundPlayer::new();
   let mut loop_helper = spin_sleep::LoopHelper::builder().build_with_target_rate(250.0);
   let mut running = true;
   // RUN
@@ -99,7 +102,7 @@ fn main() -> Res<()> {
     loop_helper.loop_start();
     {
       // active input state
-      handle_events(&mut events, &mut running, &window, &mut text_scene)?;
+      handle_events(&mut events, &mut running, &window, &mut sound_player, &mut text_scene)?;
       retrofy_scene.update();
       text_scene.update(&window);
       draw(&retrofy_scene, &text_scene, &window)?;

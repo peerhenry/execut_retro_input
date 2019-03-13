@@ -148,7 +148,6 @@ impl TextScene<'_> {
       return;
     }
     self.selected_input_array[player_index] = SelectedInput::Setting(SpaceshipSetting::Shields);
-    self.points_remaining_array[player_index] = 10;
     let cloned_settings = self.setting_points_array[player_index].clone();
     let setting_points: &mut [SpaceshipSettingValue; SETTING_COUNT] = &mut self.setting_points_array[player_index];
     let name_copy = self.player_names[player_index].clone();
@@ -176,6 +175,7 @@ impl TextScene<'_> {
     self.player_names[player_index] = self.nickname_generator.generate_nickname();
 
     // 4. reset points
+    self.points_remaining_array[player_index] = 10;
     let mut i = setting_points.len();
     while i > 0 {
       i = i - 1;

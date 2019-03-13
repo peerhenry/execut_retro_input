@@ -1,4 +1,4 @@
-use crate::spaceship_settings::{SETTING_COUNT, SpaceshipSetting};
+use crate::spaceship_settings::SpaceshipSetting;
 
 #[derive(Copy, Clone)]
 pub enum SelectedInput {
@@ -44,6 +44,7 @@ impl SelectedInput {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::spaceship_settings::SETTING_COUNT;
 
   #[test]
   fn assert_from_to_index() {
@@ -90,7 +91,7 @@ mod tests {
     }
   }
 
-  
+
   #[test]
   fn assert_first_prev() {
     let expected = SpaceshipSetting::count();

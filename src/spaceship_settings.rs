@@ -43,7 +43,7 @@ impl SpaceshipSetting {
     match self {
       SpaceshipSetting::Shields => "SHIELDS",
       SpaceshipSetting::Firepower => "FIREPOWER",
-      SpaceshipSetting::DodgeChance => "DODGE_CHANGE",
+      SpaceshipSetting::DodgeChance => "DODGE_CHANCE",
       SpaceshipSetting::DefenseThickness => "DEFENSE_THICKNESS",
       SpaceshipSetting::DefenseWidth => "DEFENSE_WIDTH",
     }

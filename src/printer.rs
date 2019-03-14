@@ -41,14 +41,10 @@ impl Printer {
     .text(&format!("Nickname: {}", player_settings.nickname))
     .text("")
     .text("Stats:")
-    /*.text(format!("* Rate of fire: {} bullets per second")) // todo: convert points to values
-    .text(format!("* Shield strength: {} hits"))
-    .text(format!("* Defense thickness: {} pixels"))
-    .text(format!("* Dodging chance: {}%", ))*/
     .text(&format!("* Shields: {}", player_settings.setting_values[0].value))
     .text(&format!("* Firepower: {}", player_settings.setting_values[1].value))
     .text(&format!("* Dodge chance: {}", player_settings.setting_values[2].value))
-    .text(&format!("* Defense thickness: {}", player_settings.setting_values[3].value))
+    .text(&format!("* Defense height: {}", player_settings.setting_values[3].value))
     .text(&format!("* Defense width: {}", player_settings.setting_values[4].value))
     .text("")
     .text("See you at the awards ceremony at 17:15!")

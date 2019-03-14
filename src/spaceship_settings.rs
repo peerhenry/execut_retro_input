@@ -3,7 +3,7 @@ pub enum SpaceshipSetting {
   Shields,
   Firepower,
   DodgeChance,
-  DefenseThickness,
+  DefenseHeight,
   DefenseWidth
 }
 
@@ -19,7 +19,7 @@ impl SpaceshipSetting {
       0 => SpaceshipSetting::Shields,
       1 => SpaceshipSetting::Firepower,
       2 => SpaceshipSetting::DodgeChance,
-      3 => SpaceshipSetting::DefenseThickness,
+      3 => SpaceshipSetting::DefenseHeight,
       _ => SpaceshipSetting::DefenseWidth,
     };
     output
@@ -30,7 +30,7 @@ impl SpaceshipSetting {
       SpaceshipSetting::Shields => 0,
       SpaceshipSetting::Firepower => 1,
       SpaceshipSetting::DodgeChance => 2,
-      SpaceshipSetting::DefenseThickness => 3,
+      SpaceshipSetting::DefenseHeight => 3,
       SpaceshipSetting::DefenseWidth => 4,
     }
   }
@@ -44,7 +44,7 @@ impl SpaceshipSetting {
       SpaceshipSetting::Shields => "SHIELDS",
       SpaceshipSetting::Firepower => "FIREPOWER",
       SpaceshipSetting::DodgeChance => "DODGE_CHANCE",
-      SpaceshipSetting::DefenseThickness => "DEFENSE_THICKNESS",
+      SpaceshipSetting::DefenseHeight => "DEFENSE_HEIGHT",
       SpaceshipSetting::DefenseWidth => "DEFENSE_WIDTH",
     }
   }

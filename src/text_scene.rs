@@ -21,16 +21,16 @@ use glutin::dpi::PhysicalSize;
 use glyph_brush::{rusttype::*, *};
 use std::{ffi::CString, mem, ptr};
 
-pub struct TextScene<'a> {
+pub struct TextScene {
   program: ShaderProgram,
   vbo: GLuint,
   vao: GLuint,
   glyph_texture: GLuint,
-  glyph_brush: GlyphBrush<'a>,
+  glyph_brush: GlyphBrush<'static>,
   pub font_size: f32,
   vertex_count: usize,
   vertex_max: usize,
-  pub dimensions: PhysicalSize, // cannot derive Default: "impl doesn't use types inside crate"
+  pub dimensions: PhysicalSize,
   frame_buffer: Option<Framebuffer>,
   font_tex_loc: GLint,
   selected_input_array: [SelectedInput; 2],
@@ -42,19 +42,16 @@ pub struct TextScene<'a> {
   appendix: String,
 }
 
-impl TextScene<'_> {
+impl TextScene {
   pub fn new(
     vs_glsl: &str,
     fs_glsl: &str,
     window: &glutin::GlWindow,
     frame_buffer: Option<Framebuffer>,
     mut nickname_generator: NicknameGenerator,
-    // printer: Printer
   ) -> Self {
-    // let font_bytes: &[u8] = include_bytes!("../assets/fonts/retro computer_demo.ttf");
     let font_bytes: &[u8] = include_bytes!("../assets/fonts/space_invaders.ttf");
     let glyph_brush: GlyphBrush = GlyphBrushBuilder::using_font_bytes(font_bytes).build();
-    // let text: String = include_str!("text/lipsum.txt").into();
     let dimensions = window
       .get_inner_size()
       .ok_or("get_inner_size = None")
@@ -317,7 +314,7 @@ impl TextScene<'_> {
 
 // ==== impl Scene ===
 
-impl Scene for TextScene<'_> {
+impl Scene for TextScene {
   fn init(&mut self) {
     unsafe {
       let mut vao = 0;

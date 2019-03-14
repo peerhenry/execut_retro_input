@@ -51,7 +51,7 @@ impl Printer {
     .text(&format!("* Defense thickness: {}", player_settings.setting_values[3].value))
     .text(&format!("* Defense width: {}", player_settings.setting_values[4].value))
     .text("")
-    .text("Good luck!")
+    .text("See you at the awards ceremony at 17:15!")
     .bit_image(&self.space_invader, None)
     .line_space(-1)
     .feed(2)

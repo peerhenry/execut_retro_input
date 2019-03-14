@@ -2,10 +2,7 @@ use std::fs;
 use crate::spaceship_settings::*;
 use std::collections::HashMap;
 
-// const ADDRESS: &str = "http://localhost:4444/";
-
 fn get_address() -> String {
-  // return ADDRESS
   fs::read_to_string("backend_address.txt").unwrap()
 }
 
@@ -101,12 +98,4 @@ mod tests {
       }
     }
   }
-
-  /* sanity
-  #[test]
-  fn test_address() {
-    let address = get_address();
-    assert_eq!("http://localhost:4444/", address);
-  }
-  */
 }

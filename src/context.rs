@@ -1,5 +1,4 @@
 use std::env;
-// use gl::types::*;
 use glutin::{EventsLoop, Api, GlContext, GlProfile, GlRequest, GlWindow, MonitorId};
 use super::Res;
 

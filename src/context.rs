@@ -2,7 +2,7 @@ use std::env;
 use glutin::{EventsLoop, Api, GlContext, GlProfile, GlRequest, GlWindow, MonitorId};
 use super::Res;
 
-pub fn init_context(title: &str) -> Res<(GlWindow, EventsLoop)> {
+pub fn init(title: &str) -> Res<(GlWindow, EventsLoop)> {
   if cfg!(target_os = "linux") {
       // winit wayland is currently still wip
       if env::var("WINIT_UNIX_BACKEND").is_err() {

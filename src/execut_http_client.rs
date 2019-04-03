@@ -14,24 +14,20 @@ pub fn fetch_taken_nicknames() -> Result<Vec<String>, Box<std::error::Error>> {
   let endpoint = get_endpoint("taken-nicknames");
   let mut response = reqwest::get(&endpoint)?;
   let response_text: String = response.text()?;
-  let deserialized: Vec<String> = serde_json::from_str(&response_text).unwrap();
+  let deserialized: Vec<String> = serde_json::from_str(&response_text)?;
   Ok(deserialized)
 }
 
 fn setting_to_key(setting: SpaceshipSetting) -> String {
-  let key = format!("settings_{}", setting.name());
-  key
+  format!("settings_{}", setting.name())
 }
 
+// TODO: get rid of this function and use a serializable struct instead
 fn to_map(nickname: String, settings: [SpaceshipSettingValue; SETTING_COUNT]) -> HashMap<String, String> {
-  let mut map = HashMap::new();
+  let mut map: HashMap<_, _> = settings.iter()
+    .map(|setting_value| (setting_to_key(setting_value.setting), setting_value.value.to_string()))
+    .collect();
   map.insert("nickname".to_string(), nickname);
-  let mut i = settings.len();
-  while i > 0 {
-    i = i - 1;
-    let key = setting_to_key(settings[i].setting);
-    map.insert(key, settings[i].value.to_string());
-  }
   map
 }
 

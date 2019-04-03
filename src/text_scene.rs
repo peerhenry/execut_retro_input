@@ -162,6 +162,7 @@ impl TextScene {
         setting_values: cloned_settings,
       });
     } else {
+      // FIXME: Nice try... But the points are going to be reset below anyway
       self.appendix = format!(
         "Could not find printer\nPlease take a picture this screen.\nYour nickname: {}",
         name_copy.clone()

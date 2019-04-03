@@ -1,4 +1,4 @@
-use rand::*;
+use rand::seq::SliceRandom;
 use std::collections::HashMap;
 
 pub struct NicknameGenerator {
@@ -7,18 +7,9 @@ pub struct NicknameGenerator {
   taken_names: HashMap<String, u32>
 }
 
-fn take_random_elem(vec: &Vec<String>) -> &str {
+fn take_random_elem(vec: &[String]) -> &str {
   let mut rng = rand::thread_rng();
-  &vec[rng.gen_range(0, vec.len())]
-}
-
-fn make_vec(string_thing: &str) -> Vec<String> {
-  let mut string_vec: Vec<String> = Vec::new();
-  let mut lines = string_thing.lines();
-  while let Some(line) = lines.next() {
-    string_vec.push(capitalize(line));
-  }
-  string_vec
+  vec.choose(&mut rng).unwrap()
 }
 
 fn capitalize(thing: &str) -> String {
@@ -30,23 +21,22 @@ fn capitalize(thing: &str) -> String {
 impl NicknameGenerator {
   pub fn new(adjectives_string: &str, nouns_string: &str, taken_nicknames: Vec<String>) -> Self {
     let mut output = NicknameGenerator {
-      adjectives: make_vec(adjectives_string),
-      nouns: make_vec(nouns_string),
+      adjectives: adjectives_string.lines().map(capitalize).collect(),
+      nouns: nouns_string.lines().map(capitalize).collect(),
       taken_names: HashMap::new()
     };
-    output.set_taken_nicknames(taken_nicknames);
+    output.set_taken_nicknames(&taken_nicknames);
     output
   }
 
-  fn set_taken_nicknames(&mut self, taken_nicknames: Vec<String>) {
+  fn set_taken_nicknames(&mut self, taken_nicknames: &[String]) {
     for name in taken_nicknames {
-      let splits: Vec<&str> = name.split(" ").collect();
-      let last = splits[splits.len() - 1];
-      if last.parse::<f64>().is_ok() {
-        let actual_name = splits[0..splits.len() - 1].join(" ");
-        self.register_nickname(String::from(actual_name));
+      let last = name.split(" ").last().unwrap();
+      if last.parse::<u32>().is_ok() {
+        let actual_name = &name[0..name.len() - last.len()];
+        self.register_nickname(actual_name.to_string());
       } else {
-        self.register_nickname(String::from(name));
+        self.register_nickname(name.to_string());
       }
     }
   }

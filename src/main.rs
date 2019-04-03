@@ -24,7 +24,6 @@ use text_scene::*;
 mod event_handler;
 use event_handler::*;
 mod context;
-use context::*;
 mod printer;
 use printer::*;
 mod nickname_generator;
@@ -49,21 +48,17 @@ pub type Res<T> = Result<T, Box<std::error::Error>>;
 
 fn main() -> Res<()> {
   let title = "Infi Execut";
-  let (window, mut events) = init_context(title)?;
+  let (window, mut events) = context::init(title)?;
   // INIT
   let f_width: GLsizei = 1920; // 1920;
   let f_height: GLsizei = 1080; // 1080;
   let text_frame_buffer = Framebuffer::new(gl::TEXTURE0, f_width, f_height);
   let text_texture = text_frame_buffer.tex_handle;
   let text_fbo_texture_number = text_frame_buffer.texture_number;
-  let taken_nicknames_result = fetch_taken_nicknames();
-  let taken_nicknames: Vec<String> = match taken_nicknames_result {
-    Err(error) => {
-      eprintln!("Error while fetching nicknames: {}", error);
-      vec![]
-    }
-    Ok(thing) => thing,
-  };
+  let taken_nicknames = fetch_taken_nicknames().unwrap_or_else(|error| {
+    eprintln!("Error while fetching nicknames: {}", error);
+    Vec::new()
+  });
   let nickname_generator = NicknameGenerator::new(
     include_str!("../assets/adjectives.txt"),
     include_str!("../assets/nouns.txt"),
